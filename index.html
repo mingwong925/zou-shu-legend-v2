@@ -15,6 +15,36 @@
     </div>
     <div id="gameWrap">
       <div id="game">
+        <!-- Mode select (SINGLE vs MULTI) -->
+        <div id="modeScreen" class="screen">
+          <div class="panel">
+            <div class="modeTitle">走數傳奇 V2</div>
+            <button class="btn primary" id="btnSingle"> SINGLE PLAYER </button>
+            <button class="btn" id="btnMulti"> MULTI PLAYER </button>
+          </div>
+        </div>
+
+        <!-- Lobby before multiplayer starts -->
+        <div id="lobbyScreen" class="screen hide">
+          <div class="panel lobbyPanel">
+            <div class="modeTitle">MULTI PLAYER</div>
+            <div id="lobbyCreateWrap">
+              <button class="btn" id="btnCreate"> CREATE ROOM </button>
+              <div class="roomCodeLabel">ROOM CODE</div>
+              <div id="roomCode" class="roomCode">—</div>
+              <button class="btn primary hide" id="btnStartMatch"> START GAME </button>
+              <div class="hint">2-6人可開始</div>
+            </div>
+            <div id="lobbyJoinWrap">
+              <input class="joinInput" id="joinCodeInput" type="tel" maxlength="6" inputmode="numeric" placeholder="輸入6位數字" />
+              <button class="btn" id="btnJoin"> JOIN ROOM </button>
+            </div>
+            <div class="hint" id="lobbyMsg">等待玩家加入...</div>
+            <div class="playersList" id="playersList"></div>
+            <button class="btn" id="btnBackToMenu"> BACK </button>
+          </div>
+        </div>
+
         <div id="startScreen">
           <div id="startCover" aria-hidden="true"></div>
           <button id="startButton" type="button" aria-label="Game start">

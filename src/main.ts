@@ -894,5 +894,83 @@ class Game {
   }
 }
 
-const game = new Game();
-window.game = game;
+// ---------- UI wiring: Menu + Lobby ----------
+class Menu {
+  private btnSingle = document.getElementById("btnSingle") as HTMLButtonElement;
+  private btnMulti = document.getElementById("btnMulti") as HTMLButtonElement;
+  private modeScreen = document.getElementById("modeScreen") as HTMLElement;
+  private lobbyScreen = document.getElementById("lobbyScreen") as HTMLElement;
+  private btnCreate = document.getElementById("btnCreate") as HTMLButtonElement;
+  private btnJoin = document.getElementById("btnJoin") as HTMLButtonElement;
+  private btnBackToMenu = document.getElementById("btnBackToMenu") as HTMLButtonElement;
+  private btnStartMatch = document.getElementById("btnStartMatch") as HTMLButtonElement;
+  private joinCodeInput = document.getElementById("joinCodeInput") as HTMLInputElement;
+  private roomCodeEl = document.getElementById("roomCode") as HTMLElement;
+  private playersList = document.getElementById("playersList") as HTMLElement;
+  private lobbyMsg = document.getElementById("lobbyMsg") as HTMLElement;
+
+  init(): void {
+    this.showModeScreen();
+    this.btnSingle.addEventListener("click", () => this.onSingle());
+    this.btnMulti.addEventListener("click", () => this.showLobby());
+    this.btnBackToMenu.addEventListener("click", () => this.showModeScreen());
+    this.btnCreate.addEventListener("click", () => this.onCreate());
+    this.btnJoin.addEventListener("click", () => this.onJoin());
+    this.btnStartMatch.addEventListener("click", () => this.onStartMatch());
+  }
+
+  private showModeScreen(): void {
+    this.modeScreen.classList.remove("hide");
+    this.lobbyScreen.classList.add("hide");
+    document.getElementById("startScreen")?.classList.remove("hide");
+  }
+
+  private showLobby(): void {
+    this.modeScreen.classList.add("hide");
+    this.lobbyScreen.classList.remove("hide");
+    document.getElementById("startScreen")?.classList.add("hide");
+    this.updateLobby();
+  }
+
+  private onSingle(): void {
+    this.modeScreen.classList.add("hide");
+    this.lobbyScreen.classList.add("hide");
+    document.getElementById("startScreen")?.classList.remove("hide");
+    // V1 game: boot and start
+    const game = new Game();
+    window.game = game;
+    // starts via user click on START button (existing behaviour)
+  }
+
+  private updateLobby(): void {
+    this.roomCodeEl.textContent = "—";
+    this.playersList.innerHTML = "";
+    this.btnStartMatch.classList.add("hide");
+    this.lobbyMsg.textContent = "按 CREATE 開房，或輸入密碼 JOIN";
+  }
+
+  private onCreate(): void {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    this.roomCodeEl.textContent = code;
+    this.playersList.innerHTML = `<div class="playerRow"><span style="color:#f7c948">金幣 (HOST)</span><span class="tag">P1</span></div>`;
+    this.lobbyMsg.textContent = "1 人已加入，至少 2 人才可開始";
+    this.btnStartMatch.classList.remove("hide");
+  }
+
+  private onJoin(): void {
+    const code = this.joinCodeInput.value.trim();
+    if (!/^[0-9]{6}$/.test(code)) {
+      this.lobbyMsg.textContent = "請輸入 6 位數字密碼";
+      return;
+    }
+    this.lobbyMsg.textContent = "JOIN 功能下一步接 Supabase 完成";
+  }
+
+  private onStartMatch(): void {
+    alert("開始 MATCH (placeholder)。下步我會接 Supabase Realtime。");
+  }
+}
+
+const menu = new Menu();
+menu.init();
+
