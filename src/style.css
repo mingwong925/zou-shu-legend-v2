@@ -1,0 +1,218 @@
+:root {
+  --gold: #f7c948;
+  --blue: #1f4bff;
+  --ink: #05060b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  background: #000;
+  color: #e8ecff;
+  font-family: ui-monospace, Menlo, Monaco, monospace;
+  overscroll-behavior: none;
+  -webkit-user-select: none; user-select: none;
+  touch-action: none;
+}
+#app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 12px);
+}
+#hud {
+  width: min(96vw, 588px);
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  letter-spacing: 1.5px;
+  padding: 8px 10px;
+  border: 2px solid var(--blue);
+  border-radius: 10px;
+  background: rgba(0, 8, 30, 0.85);
+  color: var(--gold);
+}
+#gameWrap { width: min(96vw, 588px); }
+#game {
+  position: relative;
+  border: 3px solid var(--blue);
+  border-radius: 12px;
+  background: #000;
+  box-shadow: 0 0 30px rgba(31, 75, 255, 0.25);
+  touch-action: none;
+}
+canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+#startScreen {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background:
+    url('/cover-bg.png') center / cover no-repeat,
+    linear-gradient(#078ddd 0 40%, #e7bd5d 40% 100%);
+  opacity: 1;
+  transition: opacity .25s ease;
+}
+#startScreen.hide {
+  opacity: 0;
+  pointer-events: none;
+}
+#startCover {
+  display: none;
+}
+#startButton {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(22px, 5.2%, 42px);
+  width: min(48%, 300px);
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  animation: startPulse 1.05s ease-in-out infinite;
+  transform-origin: center;
+  translate: -50% 0;
+}
+#startButton img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 8px 0 rgba(0,0,0,.38));
+}
+#startButton span {
+  display: none;
+  font-size: clamp(36px, 11vw, 76px);
+  font-weight: 900;
+  line-height: .88;
+  letter-spacing: 0;
+  color: #f7c948;
+  -webkit-text-stroke: 3px #111;
+  text-shadow: 0 8px 0 rgba(0,0,0,.35);
+}
+#startButton:focus-visible {
+  outline: 3px solid #aaff00;
+  outline-offset: 8px;
+}
+@keyframes startPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.09); }
+}
+#overlay {
+  position: absolute; inset: 0;
+  z-index: 3;
+  display: grid; place-items: center;
+  background: rgba(0,0,0,0.55);
+  color: var(--gold);
+  font-size: 26px;
+  letter-spacing: 3px;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+  white-space: pre-line;
+}
+#overlay.show { opacity: 1; }
+
+#mobileControls {
+  display: none;
+}
+
+@media (max-width: 720px), (hover: none), (pointer: coarse) {
+  #app {
+    justify-content: flex-start;
+  }
+
+  #mobileControls {
+    width: min(88vw, 328px);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity .16s ease, transform .16s ease;
+  }
+
+  #mobileControls.show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  #mobileControls button {
+    position: relative;
+    aspect-ratio: 1;
+    border: 4px solid #39ff14;
+    border-radius: 0;
+    background: transparent;
+    color: transparent;
+    box-shadow: none;
+    touch-action: none;
+  }
+
+  #mobileControls button::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    border-color: #39ff14;
+    border-style: solid;
+    border-width: 4px 4px 0 0;
+  }
+
+  #mobileControls button::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    background: #39ff14;
+  }
+
+  #mobileControls button:active {
+    background: rgba(57, 255, 20, .12);
+  }
+
+  #mobileControls [data-dir="left"]::before {
+    transform: translate(-42%, -50%) rotate(-135deg);
+  }
+
+  #mobileControls [data-dir="left"]::after {
+    width: 28px;
+    height: 4px;
+    transform: translate(-28%, -50%);
+  }
+
+  #mobileControls [data-dir="up"]::before {
+    transform: translate(-50%, -42%) rotate(-45deg);
+  }
+
+  #mobileControls [data-dir="up"]::after {
+    width: 4px;
+    height: 28px;
+    transform: translate(-50%, -28%);
+  }
+
+  #mobileControls [data-dir="down"]::before {
+    transform: translate(-50%, -58%) rotate(135deg);
+  }
+
+  #mobileControls [data-dir="down"]::after {
+    width: 4px;
+    height: 28px;
+    transform: translate(-50%, -72%);
+  }
+
+  #mobileControls [data-dir="right"]::before {
+    transform: translate(-58%, -50%) rotate(45deg);
+  }
+
+  #mobileControls [data-dir="right"]::after {
+    width: 28px;
+    height: 4px;
+    transform: translate(-72%, -50%);
+  }
+}
