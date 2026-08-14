@@ -906,6 +906,7 @@ class MultiplayerGame {
   private loopId = 0;
   private inputLoopId = 0;
   private swipeStart: { x: number; y: number } | null = null;
+  private currentDir: Dir = "none";
 
   constructor(private room: RoomConnection, private players: RoomPlayer[]) {
     this.canvas = document.createElement("canvas");
@@ -958,12 +959,18 @@ class MultiplayerGame {
   }
 
   private setLocalDir(dir: Dir): void {
+    this.currentDir = dir;
     if (this.room.role !== "host") void this.room.sendInput(dir);
     else this.inputs.set(this.room.clientId, dir);
   }
 
   private start(): void {
     this.inputLoopId = window.setInterval(() => this.pollGamepad(), 50);
+    if (this.room.role !== "host") {
+      this.loopId = window.setInterval(() => {
+        void this.room.sendInput(this.currentDir);
+      }, 50);
+    }
     if (this.room.role === "host") {
       const cactusPlayers = this.players.filter((player) => player.role === "cactus");
       this.cacti = cactusPlayers.map((player, index) => {
