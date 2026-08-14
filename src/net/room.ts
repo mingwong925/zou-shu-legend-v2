@@ -4,7 +4,7 @@ export type RoomRole = "host" | "cactus";
 export interface RoomPlayer { id: string; role: RoomRole; playerIndex: number; label: string; color: string; }
 export interface MatchStartPayload { code: string; players: RoomPlayer[]; }
 export interface InputPayload { playerId: string; dir: string; }
-export interface GameStatePayload { coin: { x: number; y: number; dir: string; lives: number }; cacti: { id: string; x: number; y: number; dir: string; color: string; playerIndex: number }[]; dots: string[]; winner: "coin" | "cacti" | null; }
+export interface GameStatePayload { coin: { x: number; y: number; dir: string; lives: number }; cacti: { id: string; x: number; y: number; dir: string; color: string; playerIndex: number }[]; dots: string[]; goodShow: { x: number; y: number } | null; fright: number; winner: "coin" | "cacti" | null; }
 
 const SERVER_URL = (import.meta.env.VITE_GAME_SERVER_URL as string | undefined) ?? "http://127.0.0.1:3001";
 
