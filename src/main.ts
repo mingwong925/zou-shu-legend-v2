@@ -909,7 +909,7 @@ class MultiplayerGame {
   private currentDir: Dir = "none";
   private targetCoin: { x: number; y: number; dir: Dir; lives: number } | null = null;
   private targetCacti: typeof this.cacti = [];
-  private goodShow: { x: number; y: number } | null = null;
+  private goodShows: { x: number; y: number }[] = [];
   private fright = 0;
   private lastRemoteFrame = 0;
 
@@ -987,14 +987,14 @@ class MultiplayerGame {
   }
 
   private snapshot(winner: "coin" | "cacti" | null) {
-    return { coin: this.coin, cacti: this.cacti, dots: [...this.dots], goodShow: this.goodShow, fright: this.fright, winner };
+    return { coin: this.coin, cacti: this.cacti, dots: [...this.dots], goodShows: this.goodShows, fright: this.fright, winner };
   }
 
   private applyState(payload: GameStatePayload): void {
     this.targetCoin = { ...payload.coin, dir: this.toDir(payload.coin.dir) };
     this.coin.lives = payload.coin.lives;
     this.targetCacti = payload.cacti.map((cactus) => ({ ...cactus, dir: this.toDir(cactus.dir) }));
-    this.goodShow = payload.goodShow;
+    this.goodShows = payload.goodShows;
     this.fright = payload.fright;
     this.dots = new Set(payload.dots);
     this.drawHud();
@@ -1062,7 +1062,7 @@ class MultiplayerGame {
     }
     ctx.fillStyle = "#ffe58f";
     for (const dot of this.dots) { const [x, y] = dot.split(",").map(Number); ctx.fillRect(x * TILE + 13, y * TILE + 13, 5, 5); }
-    if (this.goodShow) this.drawGoodShowLogo(this.goodShow.x, this.goodShow.y);
+    for (const goodShow of this.goodShows) this.drawGoodShowLogo(goodShow.x, goodShow.y);
     this.drawCoin(this.coin.x, this.coin.y);
     for (const cactus of this.cacti) this.drawCactus(cactus.x, cactus.y, this.fright > 0 ? "#ffffff" : cactus.color);
     const hudL = document.getElementById("hudLeft"); const hudM = document.getElementById("hudMid");
