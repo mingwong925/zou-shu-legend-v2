@@ -901,6 +901,7 @@ class Menu {
   private btnMulti = document.getElementById("btnMulti") as HTMLButtonElement;
   private modeScreen = document.getElementById("modeScreen") as HTMLElement;
   private lobbyScreen = document.getElementById("lobbyScreen") as HTMLElement;
+  private multiScreen = document.getElementById("multiScreen") as HTMLElement;
   private btnCreate = document.getElementById("btnCreate") as HTMLButtonElement;
   private btnJoin = document.getElementById("btnJoin") as HTMLButtonElement;
   private btnBackToMenu = document.getElementById("btnBackToMenu") as HTMLButtonElement;
@@ -909,6 +910,9 @@ class Menu {
   private roomCodeEl = document.getElementById("roomCode") as HTMLElement;
   private playersList = document.getElementById("playersList") as HTMLElement;
   private lobbyMsg = document.getElementById("lobbyMsg") as HTMLElement;
+  private multiRoomCode = document.getElementById("multiRoomCode") as HTMLElement;
+  private matchStatus = document.getElementById("matchStatus") as HTMLElement;
+  private matchPlayersList = document.getElementById("matchPlayersList") as HTMLElement;
   private room: RoomConnection | null = null;
 
   init(): void {
@@ -925,6 +929,7 @@ class Menu {
     void this.leaveRoom();
     this.modeScreen.classList.remove("hide");
     this.lobbyScreen.classList.add("hide");
+    this.multiScreen.classList.add("hide");
     document.getElementById("startScreen")?.classList.remove("hide");
   }
 
@@ -932,6 +937,7 @@ class Menu {
     void this.leaveRoom();
     this.modeScreen.classList.add("hide");
     this.lobbyScreen.classList.remove("hide");
+    this.multiScreen.classList.add("hide");
     document.getElementById("startScreen")?.classList.add("hide");
     this.updateLobby();
   }
@@ -960,6 +966,7 @@ class Menu {
       this.room = await createRoom();
       this.roomCodeEl.textContent = this.room.code;
       this.room.onPlayers((players) => this.renderPlayers(players));
+      this.room.onMatchStart((payload) => this.showMatch(payload.code, payload.players));
       this.lobbyMsg.textContent = "房間已建立，等待仙人掌加入";
     } catch (error) {
       this.lobbyMsg.textContent = error instanceof Error ? error.message : "建立房間失敗";
@@ -979,6 +986,7 @@ class Menu {
       this.room = await joinRoom(code);
       this.roomCodeEl.textContent = code;
       this.room.onPlayers((players) => this.renderPlayers(players));
+      this.room.onMatchStart((payload) => this.showMatch(payload.code, payload.players));
       this.lobbyMsg.textContent = "已加入房間，等待房主開始";
     } catch (error) {
       this.lobbyMsg.textContent = error instanceof Error ? error.message : "加入房間失敗";
@@ -987,14 +995,32 @@ class Menu {
     }
   }
 
-  private onStartMatch(): void {
+  private async onStartMatch(): Promise<void> {
     if (!this.room || this.room.role !== "host") return;
     const players = this.room.getPlayers();
     if (players.length < 2) {
       this.lobbyMsg.textContent = "至少需要 2 人才可以開始";
       return;
     }
-    this.lobbyMsg.textContent = "房間已準備，遊戲同步下一步接入";
+    this.lobbyMsg.textContent = "通知所有玩家開始...";
+    await this.room.startMatch();
+    this.showMatch(this.room.code, players);
+  }
+
+  private showMatch(code: string, players: RoomPlayer[]): void {
+    this.modeScreen.classList.add("hide");
+    this.lobbyScreen.classList.add("hide");
+    this.multiScreen.classList.remove("hide");
+    document.getElementById("startScreen")?.classList.add("hide");
+    this.multiRoomCode.textContent = code;
+    this.matchStatus.textContent = "MATCH STARTED";
+    this.matchPlayersList.innerHTML = "";
+    for (const player of players) {
+      const row = document.createElement("div");
+      row.className = "playerRow";
+      row.innerHTML = `<span style="color:${player.color}">${player.label}</span><span class="tag">P${player.playerIndex}</span>`;
+      this.matchPlayersList.appendChild(row);
+    }
   }
 
   private renderPlayers(players: RoomPlayer[]): void {

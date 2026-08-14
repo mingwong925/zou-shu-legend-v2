@@ -11,6 +11,11 @@ export interface RoomPlayer {
   color: string;
 }
 
+export interface MatchStartPayload {
+  code: string;
+  players: RoomPlayer[];
+}
+
 const CACTUS_COLORS = ["#22aa55", "#3aa0ff", "#ff4040", "#b050ff", "#f7c948"];
 
 export function generateRoomCode(): string {
@@ -32,6 +37,7 @@ export class RoomConnection {
   readonly playerIndex: number;
   private channel: RealtimeChannel | null = null;
   private playersListener: ((players: RoomPlayer[]) => void) | null = null;
+  private matchStartListener: ((payload: MatchStartPayload) => void) | null = null;
 
   constructor(code: string, role: RoomRole, playerIndex: number, clientId = createClientId()) {
     this.code = code;
@@ -50,6 +56,9 @@ export class RoomConnection {
     channel.on("presence", { event: "sync" }, () => this.emitPlayers());
     channel.on("presence", { event: "join" }, () => this.emitPlayers());
     channel.on("presence", { event: "leave" }, () => this.emitPlayers());
+    channel.on("broadcast", { event: "match-start" }, ({ payload }) => {
+      this.matchStartListener?.(payload as MatchStartPayload);
+    });
 
     await new Promise<void>((resolve, reject) => {
       channel.subscribe(async (status) => {
@@ -68,6 +77,19 @@ export class RoomConnection {
   onPlayers(listener: (players: RoomPlayer[]) => void): void {
     this.playersListener = listener;
     this.emitPlayers();
+  }
+
+  onMatchStart(listener: (payload: MatchStartPayload) => void): void {
+    this.matchStartListener = listener;
+  }
+
+  async startMatch(): Promise<void> {
+    if (!this.channel || this.role !== "host") return;
+    await this.channel.send({
+      type: "broadcast",
+      event: "match-start",
+      payload: { code: this.code, players: this.getPlayers() } satisfies MatchStartPayload,
+    });
   }
 
   async waitForHost(timeoutMs = 3500): Promise<void> {
