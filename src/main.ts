@@ -905,8 +905,11 @@ class MultiplayerGame {
   private inputs = new Map<string, Dir>();
   private loopId = 0;
   private inputLoopId = 0;
+  private renderLoopId = 0;
   private swipeStart: { x: number; y: number } | null = null;
   private currentDir: Dir = "none";
+  private targetCoin: { x: number; y: number; dir: Dir; lives: number } | null = null;
+  private targetCacti: typeof this.cacti = [];
 
   constructor(private room: RoomConnection, private players: RoomPlayer[]) {
     this.canvas = document.createElement("canvas");
@@ -971,13 +974,15 @@ class MultiplayerGame {
         void this.room.sendInput(this.currentDir);
       }, 50);
     }
+    const cactusPlayers = this.players.filter((player) => player.role === "cactus");
+    this.cacti = cactusPlayers.map((player, index) => {
+      const spawn = { x: (9 + index) * TILE + TILE / 2, y: 19 * TILE + TILE / 2 };
+      return { id: player.id, x: spawn.x, y: spawn.y, dir: "none", color: player.color, playerIndex: player.playerIndex };
+    });
     if (this.room.role === "host") {
-      const cactusPlayers = this.players.filter((player) => player.role === "cactus");
-      this.cacti = cactusPlayers.map((player, index) => {
-        const spawn = { x: (9 + index) * TILE + TILE / 2, y: 19 * TILE + TILE / 2 };
-        return { id: player.id, x: spawn.x, y: spawn.y, dir: "none", color: player.color, playerIndex: player.playerIndex };
-      });
       this.loopId = window.setInterval(() => this.hostTick(), 50);
+    } else {
+      this.renderLoopId = window.requestAnimationFrame((time) => this.remoteFrame(time));
     }
     this.draw();
   }
@@ -1009,6 +1014,7 @@ class MultiplayerGame {
     this.running = false;
     window.clearInterval(this.loopId);
     window.clearInterval(this.inputLoopId);
+    window.cancelAnimationFrame(this.renderLoopId);
     void this.room.sendState(this.snapshot(winner));
   }
 
@@ -1017,11 +1023,31 @@ class MultiplayerGame {
   }
 
   private applyState(payload: GameStatePayload): void {
-    this.coin = { ...payload.coin, dir: this.toDir(payload.coin.dir) };
-    this.cacti = payload.cacti.map((cactus) => ({ ...cactus, dir: this.toDir(cactus.dir) }));
+    this.targetCoin = { ...payload.coin, dir: this.toDir(payload.coin.dir) };
+    this.targetCacti = payload.cacti.map((cactus) => ({ ...cactus, dir: this.toDir(cactus.dir) }));
     this.dots = new Set(payload.dots);
     if (payload.winner) this.end(payload.winner);
+  }
+
+  private remoteFrame(time: number): void {
+    if (!this.running) return;
+    const smoothing = 0.22;
+    if (this.targetCoin) {
+      this.coin.x += (this.targetCoin.x - this.coin.x) * smoothing;
+      this.coin.y += (this.targetCoin.y - this.coin.y) * smoothing;
+      this.coin.dir = this.targetCoin.dir;
+      this.coin.lives = this.targetCoin.lives;
+    }
+    for (const cactus of this.cacti) {
+      const target = this.targetCacti.find((candidate) => candidate.id === cactus.id);
+      if (!target) continue;
+      cactus.x += (target.x - cactus.x) * smoothing;
+      cactus.y += (target.y - cactus.y) * smoothing;
+      cactus.dir = target.dir;
+    }
     this.draw();
+    this.renderLoopId = window.requestAnimationFrame((nextTime) => this.remoteFrame(nextTime));
+    void time;
   }
 
   private tile(x: number, y: number): { x: number; y: number } { return { x: Math.floor(x / TILE), y: Math.floor(y / TILE) }; }
