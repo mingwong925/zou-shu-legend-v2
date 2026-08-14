@@ -904,6 +904,8 @@ class MultiplayerGame {
   private cacti: { id: string; x: number; y: number; dir: Dir; color: string; playerIndex: number }[] = [];
   private inputs = new Map<string, Dir>();
   private loopId = 0;
+  private inputLoopId = 0;
+  private swipeStart: { x: number; y: number } | null = null;
 
   constructor(private room: RoomConnection, private players: RoomPlayer[]) {
     this.canvas = document.createElement("canvas");
@@ -940,6 +942,19 @@ class MultiplayerGame {
     for (const button of document.querySelectorAll<HTMLButtonElement>("#mobileControls [data-dir]")) {
       button.addEventListener("pointerdown", () => this.setLocalDir(this.toDir(button.dataset.dir ?? "none")));
     }
+    this.canvas.addEventListener("pointerdown", (event) => {
+      this.swipeStart = { x: event.clientX, y: event.clientY };
+    });
+    this.canvas.addEventListener("pointermove", (event) => {
+      if (!this.swipeStart) return;
+      const dx = event.clientX - this.swipeStart.x;
+      const dy = event.clientY - this.swipeStart.y;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 16) return;
+      this.setLocalDir(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"));
+      this.swipeStart = null;
+    });
+    this.canvas.addEventListener("pointerup", () => { this.swipeStart = null; });
+    this.canvas.addEventListener("pointercancel", () => { this.swipeStart = null; });
   }
 
   private setLocalDir(dir: Dir): void {
@@ -948,10 +963,11 @@ class MultiplayerGame {
   }
 
   private start(): void {
+    this.inputLoopId = window.setInterval(() => this.pollGamepad(), 50);
     if (this.room.role === "host") {
       const cactusPlayers = this.players.filter((player) => player.role === "cactus");
       this.cacti = cactusPlayers.map((player, index) => {
-        const spawn = { x: (7 + (index % 3)) * TILE + TILE / 2, y: 10 * TILE + TILE / 2 };
+        const spawn = { x: (9 + index) * TILE + TILE / 2, y: 19 * TILE + TILE / 2 };
         return { id: player.id, x: spawn.x, y: spawn.y, dir: "none", color: player.color, playerIndex: player.playerIndex };
       });
       this.loopId = window.setInterval(() => this.hostTick(), 50);
@@ -985,6 +1001,7 @@ class MultiplayerGame {
     if (!this.running) return;
     this.running = false;
     window.clearInterval(this.loopId);
+    window.clearInterval(this.inputLoopId);
     void this.room.sendState(this.snapshot(winner));
   }
 
@@ -1008,11 +1025,24 @@ class MultiplayerGame {
     const nextX = entity.x + dx * speed / 20;
     const nextY = entity.y + dy * speed / 20;
     const tile = this.tile(nextX, nextY);
-    if (tile.x < 0 || tile.x >= COLS || tile.y < 0 || tile.y >= ROWS || MAP[tile.y][tile.x] === "#") {
+    const tileValue = tile.x >= 0 && tile.x < COLS && tile.y >= 0 && tile.y < ROWS ? MAP[tile.y][tile.x] : "#";
+    if (tileValue === "#" || tileValue === "-" || tileValue === "=") {
       entity.dir = "none";
       return;
     }
     entity.x = nextX; entity.y = nextY;
+  }
+
+  private pollGamepad(): void {
+    const pad = Array.from(navigator.getGamepads?.() ?? []).find((candidate): candidate is Gamepad => candidate !== null);
+    if (!pad) return;
+    const pressed = (index: number) => pad.buttons[index]?.pressed === true;
+    const x = pad.axes[0] ?? 0;
+    const y = pad.axes[1] ?? 0;
+    if (pressed(12) || y < -0.45) this.setLocalDir("up");
+    else if (pressed(13) || y > 0.45) this.setLocalDir("down");
+    else if (pressed(14) || x < -0.45) this.setLocalDir("left");
+    else if (pressed(15) || x > 0.45) this.setLocalDir("right");
   }
 
   private draw(): void {
