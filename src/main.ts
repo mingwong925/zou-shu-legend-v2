@@ -910,6 +910,7 @@ class MultiplayerGame {
   private currentDir: Dir = "none";
   private targetCoin: { x: number; y: number; dir: Dir; lives: number } | null = null;
   private targetCacti: typeof this.cacti = [];
+  private lastRemoteFrame = 0;
 
   constructor(private room: RoomConnection, private players: RoomPlayer[]) {
     this.canvas = document.createElement("canvas");
@@ -1032,11 +1033,14 @@ class MultiplayerGame {
   private remoteFrame(time: number): void {
     if (!this.running) return;
     const smoothing = 0.22;
+    const predictionStep = Math.min(0.05, Math.max(0.001, (time - (this.lastRemoteFrame || time)) / 1000));
+    this.lastRemoteFrame = time;
     if (this.targetCoin) {
       this.coin.x += (this.targetCoin.x - this.coin.x) * smoothing;
       this.coin.y += (this.targetCoin.y - this.coin.y) * smoothing;
       this.coin.dir = this.targetCoin.dir;
       this.coin.lives = this.targetCoin.lives;
+      this.predict(this.coin, 138, predictionStep);
     }
     for (const cactus of this.cacti) {
       const target = this.targetCacti.find((candidate) => candidate.id === cactus.id);
@@ -1044,10 +1048,23 @@ class MultiplayerGame {
       cactus.x += (target.x - cactus.x) * smoothing;
       cactus.y += (target.y - cactus.y) * smoothing;
       cactus.dir = target.dir;
+      this.predict(cactus, 92, predictionStep);
     }
     this.draw();
     this.renderLoopId = window.requestAnimationFrame((nextTime) => this.remoteFrame(nextTime));
     void time;
+  }
+
+  private predict(entity: { x: number; y: number; dir: Dir }, speed: number, dt: number): void {
+    if (entity.dir === "none") return;
+    const [dx, dy] = DIRS[entity.dir];
+    const nextX = entity.x + dx * speed * dt;
+    const nextY = entity.y + dy * speed * dt;
+    const tile = this.tile(nextX, nextY);
+    const tileValue = tile.x >= 0 && tile.x < COLS && tile.y >= 0 && tile.y < ROWS ? MAP[tile.y][tile.x] : "#";
+    if (tileValue === "#" || tileValue === "-" || tileValue === "=") return;
+    entity.x = nextX;
+    entity.y = nextY;
   }
 
   private tile(x: number, y: number): { x: number; y: number } { return { x: Math.floor(x / TILE), y: Math.floor(y / TILE) }; }
