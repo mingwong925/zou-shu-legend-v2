@@ -98,7 +98,19 @@ export class RoomConnection {
       const entry = entries[0];
       if (entry && !players.some((player) => player.id === entry.id)) players.push(entry);
     }
-    return players.sort((a, b) => a.playerIndex - b.playerIndex);
+    players.sort((a, b) => {
+      if (a.role !== b.role) return a.role === "host" ? -1 : 1;
+      return a.id.localeCompare(b.id);
+    });
+    return players.map((player, index) => {
+      const playerIndex = index + 1;
+      return {
+        ...player,
+        playerIndex,
+        color: colorForPlayer(playerIndex),
+        label: player.role === "host" ? "金幣 (HOST)" : "仙人掌",
+      };
+    });
   }
 
   async leave(): Promise<void> {
