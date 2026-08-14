@@ -1026,7 +1026,8 @@ class MultiplayerGame {
       cactus.x += (target.x - cactus.x) * smoothing;
       cactus.y += (target.y - cactus.y) * smoothing;
       cactus.dir = target.dir;
-      this.predict(cactus, 92, predictionStep);
+      cactus.jailed = target.jailed;
+      if (!cactus.jailed) this.predict(cactus, 92, predictionStep);
     }
     this.draw();
     this.renderLoopId = window.requestAnimationFrame((nextTime) => this.remoteFrame(nextTime));
