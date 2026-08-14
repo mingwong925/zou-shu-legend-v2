@@ -990,8 +990,10 @@ class MultiplayerGame {
 
   private applyState(payload: GameStatePayload): void {
     this.targetCoin = { ...payload.coin, dir: this.toDir(payload.coin.dir) };
+    this.coin.lives = payload.coin.lives;
     this.targetCacti = payload.cacti.map((cactus) => ({ ...cactus, dir: this.toDir(cactus.dir) }));
     this.dots = new Set(payload.dots);
+    this.drawHud();
     if (payload.winner) this.end(payload.winner);
   }
 
@@ -1058,9 +1060,14 @@ class MultiplayerGame {
     for (const dot of this.dots) { const [x, y] = dot.split(",").map(Number); ctx.fillRect(x * TILE + 13, y * TILE + 13, 5, 5); }
     this.drawCoin(this.coin.x, this.coin.y);
     for (const cactus of this.cacti) this.drawCactus(cactus.x, cactus.y, cactus.color);
-    const hudL = document.getElementById("hudLeft"); const hudM = document.getElementById("hudMid"); const hudR = document.getElementById("hudRight");
+    const hudL = document.getElementById("hudLeft"); const hudM = document.getElementById("hudMid");
     if (hudL) hudL.textContent = `DOTS ${this.dots.size}`;
     if (hudM) hudM.textContent = `ROOM ${this.room.code}`;
+    this.drawHud();
+  }
+
+  private drawHud(): void {
+    const hudR = document.getElementById("hudRight");
     if (hudR) hudR.textContent = `♥`.repeat(Math.max(0, this.coin.lives));
   }
 
