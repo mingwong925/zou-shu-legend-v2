@@ -37,6 +37,7 @@ html, body {
 #gameWrap { width: min(96vw, 588px); }
 #game {
   position: relative;
+  aspect-ratio: 544 / 672;
   border: 3px solid var(--blue);
   border-radius: 12px;
   background: #000;
