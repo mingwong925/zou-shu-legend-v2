@@ -1,4 +1,5 @@
 import "./style.css";
+import { createRoom, joinRoom, type RoomConnection, type RoomPlayer } from "./net/room";
 
 type Dir = "up" | "down" | "left" | "right" | "none";
 
@@ -908,6 +909,7 @@ class Menu {
   private roomCodeEl = document.getElementById("roomCode") as HTMLElement;
   private playersList = document.getElementById("playersList") as HTMLElement;
   private lobbyMsg = document.getElementById("lobbyMsg") as HTMLElement;
+  private room: RoomConnection | null = null;
 
   init(): void {
     this.showModeScreen();
@@ -920,12 +922,14 @@ class Menu {
   }
 
   private showModeScreen(): void {
+    void this.leaveRoom();
     this.modeScreen.classList.remove("hide");
     this.lobbyScreen.classList.add("hide");
     document.getElementById("startScreen")?.classList.remove("hide");
   }
 
   private showLobby(): void {
+    void this.leaveRoom();
     this.modeScreen.classList.add("hide");
     this.lobbyScreen.classList.remove("hide");
     document.getElementById("startScreen")?.classList.add("hide");
@@ -949,25 +953,66 @@ class Menu {
     this.lobbyMsg.textContent = "按 CREATE 開房，或輸入密碼 JOIN";
   }
 
-  private onCreate(): void {
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    this.roomCodeEl.textContent = code;
-    this.playersList.innerHTML = `<div class="playerRow"><span style="color:#f7c948">金幣 (HOST)</span><span class="tag">P1</span></div>`;
-    this.lobbyMsg.textContent = "1 人已加入，至少 2 人才可開始";
-    this.btnStartMatch.classList.remove("hide");
+  private async onCreate(): Promise<void> {
+    this.btnCreate.disabled = true;
+    this.lobbyMsg.textContent = "建立房間中...";
+    try {
+      this.room = await createRoom();
+      this.roomCodeEl.textContent = this.room.code;
+      this.room.onPlayers((players) => this.renderPlayers(players));
+      this.lobbyMsg.textContent = "房間已建立，等待仙人掌加入";
+    } catch (error) {
+      this.lobbyMsg.textContent = error instanceof Error ? error.message : "建立房間失敗";
+      this.btnCreate.disabled = false;
+    }
   }
 
-  private onJoin(): void {
+  private async onJoin(): Promise<void> {
     const code = this.joinCodeInput.value.trim();
     if (!/^[0-9]{6}$/.test(code)) {
       this.lobbyMsg.textContent = "請輸入 6 位數字密碼";
       return;
     }
-    this.lobbyMsg.textContent = "JOIN 功能下一步接 Supabase 完成";
+    this.btnJoin.disabled = true;
+    this.lobbyMsg.textContent = "連線房間中...";
+    try {
+      this.room = await joinRoom(code);
+      this.roomCodeEl.textContent = code;
+      this.room.onPlayers((players) => this.renderPlayers(players));
+      this.lobbyMsg.textContent = "已加入房間，等待房主開始";
+    } catch (error) {
+      this.lobbyMsg.textContent = error instanceof Error ? error.message : "加入房間失敗";
+      this.btnJoin.disabled = false;
+      await this.leaveRoom();
+    }
   }
 
   private onStartMatch(): void {
-    alert("開始 MATCH (placeholder)。下步我會接 Supabase Realtime。");
+    if (!this.room || this.room.role !== "host") return;
+    const players = this.room.getPlayers();
+    if (players.length < 2) {
+      this.lobbyMsg.textContent = "至少需要 2 人才可以開始";
+      return;
+    }
+    this.lobbyMsg.textContent = "房間已準備，遊戲同步下一步接入";
+  }
+
+  private renderPlayers(players: RoomPlayer[]): void {
+    this.playersList.innerHTML = "";
+    for (const player of players) {
+      const row = document.createElement("div");
+      row.className = "playerRow";
+      row.innerHTML = `<span style="color:${player.color}">${player.label}</span><span class="tag">P${player.playerIndex}</span>`;
+      this.playersList.appendChild(row);
+    }
+    this.btnStartMatch.classList.toggle("hide", !this.room || this.room.role !== "host" || players.length < 2);
+  }
+
+  private async leaveRoom(): Promise<void> {
+    if (!this.room) return;
+    const room = this.room;
+    this.room = null;
+    await room.leave();
   }
 }
 
