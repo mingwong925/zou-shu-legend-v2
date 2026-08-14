@@ -902,7 +902,6 @@ class MultiplayerGame {
   private dots = new Set<string>();
   private coin = { x: 112, y: 624, dir: "none" as Dir, lives: 3 };
   private cacti: { id: string; x: number; y: number; dir: Dir; color: string; playerIndex: number }[] = [];
-  private inputs = new Map<string, Dir>();
   private loopId = 0;
   private inputLoopId = 0;
   private renderLoopId = 0;
@@ -923,10 +922,7 @@ class MultiplayerGame {
     document.getElementById("mobileControls")?.classList.add("show");
     this.resetDots();
     this.bindInput();
-    this.room.onInput((payload) => this.inputs.set(payload.playerId, this.toDir(payload.dir)));
-    this.room.onState((payload) => {
-      if (this.room.role !== "host") this.applyState(payload);
-    });
+    this.room.onState((payload) => this.applyState(payload));
     this.start();
   }
 
@@ -964,49 +960,18 @@ class MultiplayerGame {
 
   private setLocalDir(dir: Dir): void {
     this.currentDir = dir;
-    if (this.room.role !== "host") void this.room.sendInput(dir);
-    else this.inputs.set(this.room.clientId, dir);
+    void this.room.sendInput(dir);
   }
 
   private start(): void {
     this.inputLoopId = window.setInterval(() => this.pollGamepad(), 50);
-    if (this.room.role !== "host") {
-      this.loopId = window.setInterval(() => {
-        void this.room.sendInput(this.currentDir);
-      }, 50);
-    }
+    this.loopId = window.setInterval(() => { void this.room.sendInput(this.currentDir); }, 50);
     const cactusPlayers = this.players.filter((player) => player.role === "cactus");
     this.cacti = cactusPlayers.map((player, index) => {
       const spawn = { x: (9 + index) * TILE + TILE / 2, y: 19 * TILE + TILE / 2 };
       return { id: player.id, x: spawn.x, y: spawn.y, dir: "none", color: player.color, playerIndex: player.playerIndex };
     });
-    if (this.room.role === "host") {
-      this.loopId = window.setInterval(() => this.hostTick(), 50);
-    } else {
-      this.renderLoopId = window.requestAnimationFrame((time) => this.remoteFrame(time));
-    }
-    this.draw();
-  }
-
-  private hostTick(): void {
-    if (!this.running) return;
-    this.coin.dir = this.inputs.get(this.room.clientId) ?? this.coin.dir;
-    this.move(this.coin, 138);
-    for (const cactus of this.cacti) {
-      cactus.dir = this.inputs.get(cactus.id) ?? cactus.dir;
-      this.move(cactus, 92);
-    }
-    const coinTile = this.tile(this.coin.x, this.coin.y);
-    this.dots.delete(`${coinTile.x},${coinTile.y}`);
-    for (const cactus of this.cacti) {
-      if (Math.hypot(cactus.x - this.coin.x, cactus.y - this.coin.y) < 21) {
-        this.coin.lives -= 1;
-        this.coin.x = 112; this.coin.y = 624; this.coin.dir = "none";
-        if (this.coin.lives <= 0) this.end("cacti");
-      }
-    }
-    if (this.dots.size === 0) this.end("coin");
-    void this.room.sendState(this.snapshot(null));
+    this.renderLoopId = window.requestAnimationFrame((time) => this.remoteFrame(time));
     this.draw();
   }
 
@@ -1067,20 +1032,8 @@ class MultiplayerGame {
     entity.y = nextY;
   }
 
-  private tile(x: number, y: number): { x: number; y: number } { return { x: Math.floor(x / TILE), y: Math.floor(y / TILE) }; }
-
-  private move(entity: { x: number; y: number; dir: Dir }, speed: number): void {
-    if (entity.dir === "none") return;
-    const [dx, dy] = DIRS[entity.dir];
-    const nextX = entity.x + dx * speed / 20;
-    const nextY = entity.y + dy * speed / 20;
-    const tile = this.tile(nextX, nextY);
-    const tileValue = tile.x >= 0 && tile.x < COLS && tile.y >= 0 && tile.y < ROWS ? MAP[tile.y][tile.x] : "#";
-    if (tileValue === "#" || tileValue === "-" || tileValue === "=") {
-      entity.dir = "none";
-      return;
-    }
-    entity.x = nextX; entity.y = nextY;
+  private tile(x: number, y: number): { x: number; y: number } {
+    return { x: Math.floor(x / TILE), y: Math.floor(y / TILE) };
   }
 
   private pollGamepad(): void {
@@ -1229,7 +1182,6 @@ class Menu {
     }
     this.lobbyMsg.textContent = "通知所有玩家開始...";
     await this.room.startMatch();
-    this.showMatch(this.room.code, players);
   }
 
   private showMatch(code: string, players: RoomPlayer[]): void {

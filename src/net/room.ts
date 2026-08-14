@@ -1,198 +1,57 @@
-import type { RealtimeChannel } from "@supabase/supabase-js";
-import { getSupabase } from "./supabase";
+import { io, type Socket } from "socket.io-client";
 
 export type RoomRole = "host" | "cactus";
-
-export interface RoomPlayer {
-  id: string;
-  role: RoomRole;
-  playerIndex: number;
-  label: string;
-  color: string;
-}
-
-export interface MatchStartPayload {
-  code: string;
-  players: RoomPlayer[];
-}
-
+export interface RoomPlayer { id: string; role: RoomRole; playerIndex: number; label: string; color: string; }
+export interface MatchStartPayload { code: string; players: RoomPlayer[]; }
 export interface InputPayload { playerId: string; dir: string; }
-export interface GameStatePayload {
-  coin: { x: number; y: number; dir: string; lives: number };
-  cacti: { id: string; x: number; y: number; dir: string; color: string; playerIndex: number }[];
-  dots: string[];
-  winner: "coin" | "cacti" | null;
-}
+export interface GameStatePayload { coin: { x: number; y: number; dir: string; lives: number }; cacti: { id: string; x: number; y: number; dir: string; color: string; playerIndex: number }[]; dots: string[]; winner: "coin" | "cacti" | null; }
 
-const CACTUS_COLORS = ["#22aa55", "#3aa0ff", "#ff4040", "#b050ff", "#f7c948"];
+const SERVER_URL = (import.meta.env.VITE_GAME_SERVER_URL as string | undefined) ?? "http://127.0.0.1:3001";
 
-export function generateRoomCode(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
-
-export function createClientId(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-export function colorForPlayer(playerIndex: number): string {
-  return playerIndex === 1 ? "#f7c948" : CACTUS_COLORS[playerIndex - 2] ?? "#ffffff";
-}
+export function generateRoomCode(): string { return String(Math.floor(100000 + Math.random() * 900000)); }
+export function colorForPlayer(index: number): string { return ["#f7c948", "#22aa55", "#3aa0ff", "#ff4040", "#b050ff", "#f7c948"][index - 1] ?? "#ffffff"; }
 
 export class RoomConnection {
   readonly clientId: string;
   readonly code: string;
   readonly role: RoomRole;
   readonly playerIndex: number;
-  private channel: RealtimeChannel | null = null;
+  private socket: Socket;
   private playersListener: ((players: RoomPlayer[]) => void) | null = null;
   private matchStartListener: ((payload: MatchStartPayload) => void) | null = null;
   private inputListener: ((payload: InputPayload) => void) | null = null;
   private stateListener: ((payload: GameStatePayload) => void) | null = null;
+  private players: RoomPlayer[] = [];
 
-  constructor(code: string, role: RoomRole, playerIndex: number, clientId = createClientId()) {
-    this.code = code;
-    this.role = role;
-    this.playerIndex = playerIndex;
-    this.clientId = clientId;
+  constructor(socket: Socket, code: string, role: RoomRole, player: RoomPlayer) {
+    this.socket = socket; this.code = code; this.role = role; this.playerIndex = player.playerIndex; this.clientId = player.id; this.players = [player];
+    socket.on("room-players", (players: RoomPlayer[]) => { this.players = players; this.playersListener?.(players); });
+    socket.on("match-start", (payload: MatchStartPayload) => this.matchStartListener?.(payload));
+    socket.on("game-state", (payload: GameStatePayload) => this.stateListener?.(payload));
+    socket.on("game-input", (payload: InputPayload) => this.inputListener?.(payload));
   }
-
-  async connect(): Promise<void> {
-    const supabase = getSupabase();
-    const channel = supabase.channel(`room:${this.code}`, {
-      config: { presence: { key: this.clientId } },
-    });
-    this.channel = channel;
-
-    channel.on("presence", { event: "sync" }, () => this.emitPlayers());
-    channel.on("presence", { event: "join" }, () => this.emitPlayers());
-    channel.on("presence", { event: "leave" }, () => this.emitPlayers());
-    channel.on("broadcast", { event: "match-start" }, ({ payload }) => {
-      this.matchStartListener?.(payload as MatchStartPayload);
-    });
-    channel.on("broadcast", { event: "game-input" }, ({ payload }) => {
-      this.inputListener?.(payload as InputPayload);
-    });
-    channel.on("broadcast", { event: "game-state" }, ({ payload }) => {
-      this.stateListener?.(payload as GameStatePayload);
-    });
-
-    await new Promise<void>((resolve, reject) => {
-      channel.subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          await channel.track(this.metadata());
-          resolve();
-        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          reject(new Error(`Room connection failed: ${status}`));
-        }
-      });
-    });
-
-    this.emitPlayers();
-  }
-
-  onPlayers(listener: (players: RoomPlayer[]) => void): void {
-    this.playersListener = listener;
-    this.emitPlayers();
-  }
-
-  onMatchStart(listener: (payload: MatchStartPayload) => void): void {
-    this.matchStartListener = listener;
-  }
-
+  onPlayers(listener: (players: RoomPlayer[]) => void): void { this.playersListener = listener; }
+  onMatchStart(listener: (payload: MatchStartPayload) => void): void { this.matchStartListener = listener; }
   onInput(listener: (payload: InputPayload) => void): void { this.inputListener = listener; }
   onState(listener: (payload: GameStatePayload) => void): void { this.stateListener = listener; }
-
-  async sendInput(dir: string): Promise<void> {
-    await this.channel?.send({ type: "broadcast", event: "game-input", payload: { playerId: this.clientId, dir } satisfies InputPayload });
-  }
-
-  async sendState(payload: GameStatePayload): Promise<void> {
-    await this.channel?.send({ type: "broadcast", event: "game-state", payload });
-  }
-
-  async startMatch(): Promise<void> {
-    if (!this.channel || this.role !== "host") return;
-    await this.channel.send({
-      type: "broadcast",
-      event: "match-start",
-      payload: { code: this.code, players: this.getPlayers() } satisfies MatchStartPayload,
-    });
-  }
-
-  async waitForHost(timeoutMs = 3500): Promise<void> {
-    if (this.role === "host") return;
-    const hasHost = () => this.getPlayers().some((player) => player.role === "host");
-    if (hasHost()) return;
-
-    await new Promise<void>((resolve, reject) => {
-      const startedAt = Date.now();
-      const check = () => {
-        if (hasHost()) {
-          resolve();
-        } else if (Date.now() - startedAt >= timeoutMs) {
-          reject(new Error("找不到房間，請確認房間密碼或房主仍在線。"));
-        } else {
-          window.setTimeout(check, 100);
-        }
-      };
-      check();
-    });
-  }
-
-  getPlayers(): RoomPlayer[] {
-    if (!this.channel) return [];
-    const state = this.channel.presenceState<RoomPlayer>();
-    const players: RoomPlayer[] = [];
-    for (const entries of Object.values(state)) {
-      const entry = entries[0];
-      if (entry && !players.some((player) => player.id === entry.id)) players.push(entry);
-    }
-    players.sort((a, b) => {
-      if (a.role !== b.role) return a.role === "host" ? -1 : 1;
-      return a.id.localeCompare(b.id);
-    });
-    return players.map((player, index) => {
-      const playerIndex = index + 1;
-      return {
-        ...player,
-        playerIndex,
-        color: colorForPlayer(playerIndex),
-        label: player.role === "host" ? "金幣 (HOST)" : "仙人掌",
-      };
-    });
-  }
-
-  async leave(): Promise<void> {
-    if (!this.channel) return;
-    await this.channel.untrack();
-    await this.channel.unsubscribe();
-    this.channel = null;
-  }
-
-  private metadata(): RoomPlayer {
-    return {
-      id: this.clientId,
-      role: this.role,
-      playerIndex: this.playerIndex,
-      label: this.role === "host" ? "金幣 (HOST)" : "仙人掌",
-      color: colorForPlayer(this.playerIndex),
-    };
-  }
-
-  private emitPlayers(): void {
-    if (this.playersListener) this.playersListener(this.getPlayers());
-  }
+  getPlayers(): RoomPlayer[] { return this.players; }
+  async startMatch(): Promise<void> { await this.request("room:start", { code: this.code }); }
+  async sendInput(dir: string): Promise<void> { this.socket.emit("game-input", { code: this.code, playerId: this.clientId, dir }); }
+  async sendState(_payload: GameStatePayload): Promise<void> { /* Server is authoritative. */ }
+  async leave(): Promise<void> { this.socket.disconnect(); }
+  private request(event: string, payload: unknown): Promise<void> { return new Promise((resolve, reject) => this.socket.emit(event, payload, (result: { ok: boolean; error?: string }) => result.ok ? resolve() : reject(new Error(result.error ?? "Server request failed")))); }
 }
 
-export async function createRoom(code = generateRoomCode()): Promise<RoomConnection> {
-  const room = new RoomConnection(code, "host", 1);
-  await room.connect();
-  return room;
+async function connectRoom(code: string, role: RoomRole): Promise<RoomConnection> {
+  const socket = io(SERVER_URL, { transports: ["websocket", "polling"] });
+  const event = role === "host" ? "room:create" : "room:join";
+  const result = await new Promise<{ ok: boolean; error?: string; player: RoomPlayer }>((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error("遊戲伺服器連線逾時，請確認 server 正在運行。")), 6000);
+    socket.on("connect_error", (error) => { window.clearTimeout(timer); reject(error); });
+    socket.on("connect", () => socket.emit(event, { code }, (reply: { ok: boolean; error?: string; player: RoomPlayer }) => { window.clearTimeout(timer); reply.ok ? resolve(reply) : reject(new Error(reply.error)); }));
+  });
+  return new RoomConnection(socket, code, role, result.player);
 }
 
-export async function joinRoom(code: string): Promise<RoomConnection> {
-  const room = new RoomConnection(code, "cactus", 2);
-  await room.connect();
-  await room.waitForHost();
-  return room;
-}
+export async function createRoom(code = generateRoomCode()): Promise<RoomConnection> { return connectRoom(code, "host"); }
+export async function joinRoom(code: string): Promise<RoomConnection> { return connectRoom(code, "cactus"); }
