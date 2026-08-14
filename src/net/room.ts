@@ -16,6 +16,14 @@ export interface MatchStartPayload {
   players: RoomPlayer[];
 }
 
+export interface InputPayload { playerId: string; dir: string; }
+export interface GameStatePayload {
+  coin: { x: number; y: number; dir: string; lives: number };
+  cacti: { id: string; x: number; y: number; dir: string; color: string; playerIndex: number }[];
+  dots: string[];
+  winner: "coin" | "cacti" | null;
+}
+
 const CACTUS_COLORS = ["#22aa55", "#3aa0ff", "#ff4040", "#b050ff", "#f7c948"];
 
 export function generateRoomCode(): string {
@@ -38,6 +46,8 @@ export class RoomConnection {
   private channel: RealtimeChannel | null = null;
   private playersListener: ((players: RoomPlayer[]) => void) | null = null;
   private matchStartListener: ((payload: MatchStartPayload) => void) | null = null;
+  private inputListener: ((payload: InputPayload) => void) | null = null;
+  private stateListener: ((payload: GameStatePayload) => void) | null = null;
 
   constructor(code: string, role: RoomRole, playerIndex: number, clientId = createClientId()) {
     this.code = code;
@@ -58,6 +68,12 @@ export class RoomConnection {
     channel.on("presence", { event: "leave" }, () => this.emitPlayers());
     channel.on("broadcast", { event: "match-start" }, ({ payload }) => {
       this.matchStartListener?.(payload as MatchStartPayload);
+    });
+    channel.on("broadcast", { event: "game-input" }, ({ payload }) => {
+      this.inputListener?.(payload as InputPayload);
+    });
+    channel.on("broadcast", { event: "game-state" }, ({ payload }) => {
+      this.stateListener?.(payload as GameStatePayload);
     });
 
     await new Promise<void>((resolve, reject) => {
@@ -81,6 +97,17 @@ export class RoomConnection {
 
   onMatchStart(listener: (payload: MatchStartPayload) => void): void {
     this.matchStartListener = listener;
+  }
+
+  onInput(listener: (payload: InputPayload) => void): void { this.inputListener = listener; }
+  onState(listener: (payload: GameStatePayload) => void): void { this.stateListener = listener; }
+
+  async sendInput(dir: string): Promise<void> {
+    await this.channel?.send({ type: "broadcast", event: "game-input", payload: { playerId: this.clientId, dir } satisfies InputPayload });
+  }
+
+  async sendState(payload: GameStatePayload): Promise<void> {
+    await this.channel?.send({ type: "broadcast", event: "game-state", payload });
   }
 
   async startMatch(): Promise<void> {

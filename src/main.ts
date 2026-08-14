@@ -1,5 +1,5 @@
 import "./style.css";
-import { createRoom, joinRoom, type RoomConnection, type RoomPlayer } from "./net/room";
+import { createRoom, joinRoom, type GameStatePayload, type RoomConnection, type RoomPlayer } from "./net/room";
 
 type Dir = "up" | "down" | "left" | "right" | "none";
 
@@ -895,6 +895,151 @@ class Game {
   }
 }
 
+class MultiplayerGame {
+  private canvas: HTMLCanvasElement;
+  private ctx: CanvasRenderingContext2D;
+  private running = true;
+  private dots = new Set<string>();
+  private coin = { x: 112, y: 624, dir: "none" as Dir, lives: 3 };
+  private cacti: { id: string; x: number; y: number; dir: Dir; color: string; playerIndex: number }[] = [];
+  private inputs = new Map<string, Dir>();
+  private loopId = 0;
+
+  constructor(private room: RoomConnection, private players: RoomPlayer[]) {
+    this.canvas = document.createElement("canvas");
+    this.canvas.width = W; this.canvas.height = H;
+    this.ctx = this.canvas.getContext("2d")!;
+    this.ctx.imageSmoothingEnabled = false;
+    document.getElementById("game")!.prepend(this.canvas);
+    document.getElementById("multiScreen")?.classList.add("hide");
+    document.getElementById("startScreen")?.classList.add("hide");
+    document.getElementById("mobileControls")?.classList.add("show");
+    this.resetDots();
+    this.bindInput();
+    this.room.onInput((payload) => this.inputs.set(payload.playerId, this.toDir(payload.dir)));
+    this.room.onState((payload) => {
+      if (this.room.role !== "host") this.applyState(payload);
+    });
+    this.start();
+  }
+
+  private toDir(value: string): Dir {
+    return value === "up" || value === "down" || value === "left" || value === "right" ? value : "none";
+  }
+
+  private resetDots(): void {
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (MAP[y][x] === ".") this.dots.add(`${x},${y}`);
+  }
+
+  private bindInput(): void {
+    window.addEventListener("keydown", (event) => {
+      const key = event.key.toLowerCase();
+      const dir: Dir = key === "arrowup" || key === "w" ? "up" : key === "arrowdown" || key === "s" ? "down" : key === "arrowleft" || key === "a" ? "left" : key === "arrowright" || key === "d" ? "right" : "none";
+      if (dir !== "none") { event.preventDefault(); this.setLocalDir(dir); }
+    });
+    for (const button of document.querySelectorAll<HTMLButtonElement>("#mobileControls [data-dir]")) {
+      button.addEventListener("pointerdown", () => this.setLocalDir(this.toDir(button.dataset.dir ?? "none")));
+    }
+  }
+
+  private setLocalDir(dir: Dir): void {
+    if (this.room.role !== "host") void this.room.sendInput(dir);
+    else this.inputs.set(this.room.clientId, dir);
+  }
+
+  private start(): void {
+    if (this.room.role === "host") {
+      const cactusPlayers = this.players.filter((player) => player.role === "cactus");
+      this.cacti = cactusPlayers.map((player, index) => {
+        const spawn = { x: (7 + (index % 3)) * TILE + TILE / 2, y: 10 * TILE + TILE / 2 };
+        return { id: player.id, x: spawn.x, y: spawn.y, dir: "none", color: player.color, playerIndex: player.playerIndex };
+      });
+      this.loopId = window.setInterval(() => this.hostTick(), 50);
+    }
+    this.draw();
+  }
+
+  private hostTick(): void {
+    if (!this.running) return;
+    this.coin.dir = this.inputs.get(this.room.clientId) ?? this.coin.dir;
+    this.move(this.coin, 138);
+    for (const cactus of this.cacti) {
+      cactus.dir = this.inputs.get(cactus.id) ?? cactus.dir;
+      this.move(cactus, 92);
+    }
+    const coinTile = this.tile(this.coin.x, this.coin.y);
+    this.dots.delete(`${coinTile.x},${coinTile.y}`);
+    for (const cactus of this.cacti) {
+      if (Math.hypot(cactus.x - this.coin.x, cactus.y - this.coin.y) < 21) {
+        this.coin.lives -= 1;
+        this.coin.x = 112; this.coin.y = 624; this.coin.dir = "none";
+        if (this.coin.lives <= 0) this.end("cacti");
+      }
+    }
+    if (this.dots.size === 0) this.end("coin");
+    void this.room.sendState(this.snapshot(null));
+    this.draw();
+  }
+
+  private end(winner: "coin" | "cacti"): void {
+    if (!this.running) return;
+    this.running = false;
+    window.clearInterval(this.loopId);
+    void this.room.sendState(this.snapshot(winner));
+  }
+
+  private snapshot(winner: "coin" | "cacti" | null) {
+    return { coin: this.coin, cacti: this.cacti, dots: [...this.dots], winner };
+  }
+
+  private applyState(payload: GameStatePayload): void {
+    this.coin = { ...payload.coin, dir: this.toDir(payload.coin.dir) };
+    this.cacti = payload.cacti.map((cactus) => ({ ...cactus, dir: this.toDir(cactus.dir) }));
+    this.dots = new Set(payload.dots);
+    if (payload.winner) this.end(payload.winner);
+    this.draw();
+  }
+
+  private tile(x: number, y: number): { x: number; y: number } { return { x: Math.floor(x / TILE), y: Math.floor(y / TILE) }; }
+
+  private move(entity: { x: number; y: number; dir: Dir }, speed: number): void {
+    if (entity.dir === "none") return;
+    const [dx, dy] = DIRS[entity.dir];
+    const nextX = entity.x + dx * speed / 20;
+    const nextY = entity.y + dy * speed / 20;
+    const tile = this.tile(nextX, nextY);
+    if (tile.x < 0 || tile.x >= COLS || tile.y < 0 || tile.y >= ROWS || MAP[tile.y][tile.x] === "#") {
+      entity.dir = "none";
+      return;
+    }
+    entity.x = nextX; entity.y = nextY;
+  }
+
+  private draw(): void {
+    const ctx = this.ctx;
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+      if (MAP[y][x] === "#") { ctx.fillStyle = "#001a66"; ctx.fillRect(x * TILE, y * TILE, TILE, TILE); ctx.strokeStyle = "#1f4bff"; ctx.strokeRect(x * TILE + 2, y * TILE + 2, TILE - 4, TILE - 4); }
+    }
+    ctx.fillStyle = "#ffe58f";
+    for (const dot of this.dots) { const [x, y] = dot.split(",").map(Number); ctx.fillRect(x * TILE + 13, y * TILE + 13, 5, 5); }
+    this.drawCoin(this.coin.x, this.coin.y);
+    for (const cactus of this.cacti) this.drawCactus(cactus.x, cactus.y, cactus.color);
+    const hudL = document.getElementById("hudLeft"); const hudM = document.getElementById("hudMid"); const hudR = document.getElementById("hudRight");
+    if (hudL) hudL.textContent = `DOTS ${this.dots.size}`;
+    if (hudM) hudM.textContent = `ROOM ${this.room.code}`;
+    if (hudR) hudR.textContent = `♥`.repeat(Math.max(0, this.coin.lives));
+  }
+
+  private drawCoin(x: number, y: number): void {
+    const ctx = this.ctx; ctx.fillStyle = "#3d2c0a"; ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#f7c948"; ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#3d2c0a"; ctx.font = "900 18px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("$", x, y);
+  }
+
+  private drawCactus(x: number, y: number, color: string): void {
+    const ctx = this.ctx; ctx.fillStyle = color; ctx.fillRect(x - 8, y - 14, 16, 28); ctx.fillRect(x - 13, y - 7, 5, 13); ctx.fillRect(x + 8, y - 7, 5, 13); ctx.fillStyle = "#102010"; ctx.fillRect(x - 5, y - 7, 3, 3); ctx.fillRect(x + 2, y - 7, 3, 3);
+  }
+}
+
 // ---------- UI wiring: Menu + Lobby ----------
 class Menu {
   private btnSingle = document.getElementById("btnSingle") as HTMLButtonElement;
@@ -1021,6 +1166,7 @@ class Menu {
       row.innerHTML = `<span style="color:${player.color}">${player.label}</span><span class="tag">P${player.playerIndex}</span>`;
       this.matchPlayersList.appendChild(row);
     }
+    new MultiplayerGame(this.room!, players);
   }
 
   private renderPlayers(players: RoomPlayer[]): void {
