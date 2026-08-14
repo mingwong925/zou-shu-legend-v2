@@ -901,7 +901,7 @@ class MultiplayerGame {
   private running = true;
   private dots = new Set<string>();
   private coin = { x: 112, y: 624, dir: "none" as Dir, lives: 3 };
-  private cacti: { id: string; x: number; y: number; dir: Dir; color: string; playerIndex: number }[] = [];
+  private cacti: { id: string; x: number; y: number; dir: Dir; color: string; playerIndex: number; jailed: boolean }[] = [];
   private loopId = 0;
   private inputLoopId = 0;
   private renderLoopId = 0;
@@ -911,6 +911,7 @@ class MultiplayerGame {
   private targetCacti: typeof this.cacti = [];
   private goodShows: { x: number; y: number }[] = [];
   private fright = 0;
+  private messageTimer = 0;
   private lastRemoteFrame = 0;
 
   constructor(private room: RoomConnection, private players: RoomPlayer[]) {
@@ -971,7 +972,7 @@ class MultiplayerGame {
     const cactusPlayers = this.players.filter((player) => player.role === "cactus");
     this.cacti = cactusPlayers.map((player, index) => {
       const spawn = { x: (9 + index) * TILE + TILE / 2, y: 19 * TILE + TILE / 2 };
-      return { id: player.id, x: spawn.x, y: spawn.y, dir: "none", color: player.color, playerIndex: player.playerIndex };
+      return { id: player.id, x: spawn.x, y: spawn.y, dir: "none", color: player.color, playerIndex: player.playerIndex, jailed: true };
     });
     this.renderLoopId = window.requestAnimationFrame((time) => this.remoteFrame(time));
     this.draw();
@@ -987,7 +988,7 @@ class MultiplayerGame {
   }
 
   private snapshot(winner: "coin" | "cacti" | null) {
-    return { coin: this.coin, cacti: this.cacti, dots: [...this.dots], goodShows: this.goodShows, fright: this.fright, winner };
+    return { coin: this.coin, cacti: this.cacti, dots: [...this.dots], goodShows: this.goodShows, fright: this.fright, message: null, winner };
   }
 
   private applyState(payload: GameStatePayload): void {
@@ -997,6 +998,12 @@ class MultiplayerGame {
     this.goodShows = payload.goodShows;
     this.fright = payload.fright;
     this.dots = new Set(payload.dots);
+    if (payload.message) {
+      const overlay = document.getElementById("overlay");
+      if (overlay) { overlay.textContent = payload.message; overlay.classList.add("show"); }
+      window.clearTimeout(this.messageTimer);
+      this.messageTimer = window.setTimeout(() => overlay?.classList.remove("show"), 1200);
+    }
     this.drawHud();
     if (payload.winner) this.end(payload.winner);
   }
