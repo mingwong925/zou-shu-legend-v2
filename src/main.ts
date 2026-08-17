@@ -1022,6 +1022,10 @@ class MultiplayerGame {
     this.targetCoin = { ...payload.coin, dir: this.toDir(payload.coin.dir) };
     this.coin.lives = payload.coin.lives;
     this.targetCacti = payload.cacti.map((cactus) => ({ ...cactus, dir: this.toDir(cactus.dir) }));
+    this.cacti = this.cacti.filter((cactus) => this.targetCacti.some((target) => target.id === cactus.id));
+    for (const target of this.targetCacti) {
+      if (!this.cacti.some((cactus) => cactus.id === target.id)) this.cacti.push({ ...target });
+    }
     this.goodShows = payload.goodShows;
     this.fright = payload.fright;
     this.dots = new Set(payload.dots);
