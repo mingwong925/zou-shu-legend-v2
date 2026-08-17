@@ -930,8 +930,16 @@ class MultiplayerGame {
     document.getElementById("mobileControls")?.classList.add("show");
     this.resetDots();
     this.bindInput();
+    this.room.onPlayers((players) => this.removeDepartedCacti(players));
     this.room.onState((payload) => this.applyState(payload));
     this.start();
+  }
+
+  private removeDepartedCacti(players: RoomPlayer[]): void {
+    const connectedIds = new Set(players.filter((player) => player.role === "cactus").map((player) => player.id));
+    this.cacti = this.cacti.filter((cactus) => connectedIds.has(cactus.id));
+    this.targetCacti = this.targetCacti.filter((cactus) => connectedIds.has(cactus.id));
+    this.draw();
   }
 
   private toDir(value: string): Dir {
