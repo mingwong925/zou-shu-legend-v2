@@ -1081,9 +1081,7 @@ class MultiplayerGame {
     for (const dot of this.dots) { const [x, y] = dot.split(",").map(Number); ctx.fillRect(x * TILE + 13, y * TILE + 13, 5, 5); }
     for (const goodShow of this.goodShows) this.drawGoodShowLogo(goodShow.x, goodShow.y);
     this.drawCoin(this.coin.x, this.coin.y);
-    for (const cactus of this.cacti) {
-      this.drawCactus(cactus.x, cactus.y, this.fright > 0 ? "#ffffff" : cactus.color, cactus.id === this.room.clientId, cactus.color);
-    }
+    for (const cactus of this.cacti) this.drawCactus(cactus.x, cactus.y, this.fright > 0 ? "#ffffff" : cactus.color);
     const hudL = document.getElementById("hudLeft"); const hudM = document.getElementById("hudMid");
     if (hudL) hudL.textContent = `DOTS ${this.dots.size}`;
     if (hudM) hudM.textContent = this.fright > 0 ? `GOOD SHOW ${Math.ceil(this.fright / 1000)}s` : `ROOM ${this.room.code}`;
@@ -1099,21 +1097,10 @@ class MultiplayerGame {
     const ctx = this.ctx; const frame = Math.floor(performance.now() / 120) % 2; ctx.fillStyle = "#3d2c0a"; ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#f7c948"; ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#ffe58f"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 8, Math.PI * 1.1, Math.PI * 1.7); ctx.stroke(); ctx.fillStyle = "#3d2c0a"; ctx.font = "900 18px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("$", x, y); ctx.fillRect(x - 17, y - 2, 5, 4); ctx.fillRect(x + 12, y - 2, 5, 4); ctx.fillRect(x - 11, y + 14, 4, 7); ctx.fillRect(x + (frame ? 4 : 7), y + 14, 4, 7);
   }
 
-  private drawCactus(x: number, y: number, color: string, isLocalPlayer: boolean, playerColor: string): void {
+  private drawCactus(x: number, y: number, color: string): void {
     const ctx = this.ctx;
     ctx.save();
     ctx.translate(x, y);
-    if (isLocalPlayer) {
-      const label = "仙人掌 YOU";
-      ctx.font = "900 11px ui-monospace, monospace";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      const labelWidth = Math.ceil(ctx.measureText(label).width) + 10;
-      ctx.fillStyle = playerColor;
-      ctx.fillRect(-labelWidth / 2, -36, labelWidth, 16);
-      ctx.fillStyle = "#000000";
-      ctx.fillText(label, 0, -28);
-    }
     ctx.fillStyle = color;
     ctx.fillRect(-8, -14, 16, 26);
     ctx.fillRect(-12, -8, 4, 14);
@@ -1316,9 +1303,11 @@ class Menu {
   private renderPlayers(players: RoomPlayer[]): void {
     this.playersList.innerHTML = "";
     for (const player of players) {
+      const isLocalCactus = player.role === "cactus" && player.id === this.room?.clientId;
       const row = document.createElement("div");
-      row.className = "playerRow";
-      row.innerHTML = `<span style="color:${player.color}">${player.label}</span><span class="tag">P${player.playerIndex}</span>`;
+      row.className = `playerRow${isLocalCactus ? " you" : ""}`;
+      if (isLocalCactus) row.style.backgroundColor = player.color;
+      row.innerHTML = `<span style="color:${isLocalCactus ? "#000000" : player.color}">${isLocalCactus ? "仙人掌 YOU" : player.label}</span><span class="tag">P${player.playerIndex}</span>`;
       this.playersList.appendChild(row);
     }
     this.btnStartMatch.classList.toggle("hide", !this.room || this.room.role !== "host" || players.length < 2);

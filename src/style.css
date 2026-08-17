@@ -296,6 +296,12 @@ canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; 
   font-size: 10px;
   color: #b8c6ff;
 }
+.playerRow.you {
+  color: #000;
+}
+.playerRow.you .tag {
+  color: #000;
+}
 
 #mobileControls {
   display: none;
