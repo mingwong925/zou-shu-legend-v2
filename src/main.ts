@@ -1041,7 +1041,16 @@ class MultiplayerGame {
     const nextY = entity.y + dy * speed * dt;
     const tile = this.tile(nextX, nextY);
     const tileValue = tile.x >= 0 && tile.x < COLS && tile.y >= 0 && tile.y < ROWS ? MAP[tile.y][tile.x] : "#";
-    if (tileValue === "#" || tileValue === "-" || tileValue === "=") return;
+    const footprintClear = (px: number, py: number) => {
+      const points = [[px - 13, py - 19], [px + 13, py - 19], [px - 13, py + 19], [px + 13, py + 19]];
+      return points.every(([pointX, pointY]) => {
+        const pointTileX = Math.floor(pointX / TILE);
+        const pointTileY = Math.floor(pointY / TILE);
+        if (pointTileX < 0 || pointTileX >= COLS || pointTileY < 0 || pointTileY >= ROWS) return false;
+        return !["#", "-", "="].includes(MAP[pointTileY][pointTileX]);
+      });
+    };
+    if (tileValue === "#" || tileValue === "-" || tileValue === "=" || !footprintClear(nextX, nextY)) return;
     entity.x = nextX;
     entity.y = nextY;
   }
@@ -1089,7 +1098,28 @@ class MultiplayerGame {
   }
 
   private drawCactus(x: number, y: number, color: string): void {
-    const ctx = this.ctx; ctx.fillStyle = color; ctx.fillRect(x - 8, y - 14, 16, 26); ctx.fillRect(x - 12, y - 8, 4, 14); ctx.fillRect(x + 8, y - 8, 4, 14); ctx.fillRect(x - 2, y - 19, 4, 5); ctx.fillStyle = "#102010"; ctx.fillRect(x - 5, y - 9, 3, 3); ctx.fillRect(x + 2, y - 9, 3, 3); ctx.fillStyle = "#20252b"; ctx.fillRect(x + 12, y - 10, 5, 8); ctx.fillStyle = "#c9d1d9"; ctx.fillRect(x + 17, y - 12, 8, 4);
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = color;
+    ctx.fillRect(-8, -14, 16, 26);
+    ctx.fillRect(-12, -8, 4, 14);
+    ctx.fillRect(8, -8, 4, 14);
+    ctx.fillRect(-2, -19, 4, 5);
+    ctx.fillRect(-6, -16, 2, 3);
+    ctx.fillRect(4, -16, 2, 3);
+    ctx.fillStyle = "#0e4d24";
+    ctx.fillRect(-6, -12, 1, 22);
+    ctx.fillRect(5, -12, 1, 22);
+    ctx.fillStyle = "#20252b";
+    ctx.fillRect(12, -10, 5, 8);
+    ctx.fillStyle = "#c9d1d9";
+    ctx.fillRect(17, -12, 8, 4);
+    ctx.fillStyle = "#102010";
+    ctx.fillRect(-5, -9, 3, 3);
+    ctx.fillRect(2, -9, 3, 3);
+    ctx.fillRect(-2, -2, 4, 3);
+    ctx.restore();
   }
 
   private drawGoodShowLogo(x: number, y: number): void {
