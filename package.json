@@ -1,24 +1,21 @@
 {
-  "name": "zou-shu-legend",
+  "name": "zou-shu-legend-v2",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "server:dev": "npm --prefix server run dev",
+    "server:build": "npm --prefix server run build",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "typescript": "^7.0.2",
     "vite": "^8.2.1"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.112.3",
-    "socket.io-client": "^4.8.3"
-  },
-  "description": "",
-  "main": "index.js",
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  }
 }
