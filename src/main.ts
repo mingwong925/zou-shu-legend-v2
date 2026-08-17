@@ -1042,7 +1042,7 @@ class MultiplayerGame {
     const tile = this.tile(nextX, nextY);
     const tileValue = tile.x >= 0 && tile.x < COLS && tile.y >= 0 && tile.y < ROWS ? MAP[tile.y][tile.x] : "#";
     const footprintClear = (px: number, py: number) => {
-      const points = [[px - 8, py - 10], [px + 8, py - 10], [px - 8, py + 10], [px + 8, py + 10]];
+      const points = [[px - 6, py - 8], [px + 6, py - 8], [px - 6, py + 8], [px + 6, py + 8]];
       return points.every(([pointX, pointY]) => {
         const pointTileX = Math.floor(pointX / TILE);
         const pointTileY = Math.floor(pointY / TILE);
