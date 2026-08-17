@@ -1135,10 +1135,17 @@ class Menu {
   private modeScreen = document.getElementById("modeScreen") as HTMLElement;
   private lobbyScreen = document.getElementById("lobbyScreen") as HTMLElement;
   private multiScreen = document.getElementById("multiScreen") as HTMLElement;
-  private btnCreate = document.getElementById("btnCreate") as HTMLButtonElement;
+  private btnOpenCreate = document.getElementById("btnOpenCreate") as HTMLButtonElement;
+  private btnOpenJoin = document.getElementById("btnOpenJoin") as HTMLButtonElement;
   private btnJoin = document.getElementById("btnJoin") as HTMLButtonElement;
   private btnBackToMenu = document.getElementById("btnBackToMenu") as HTMLButtonElement;
+  private btnBackFromCreate = document.getElementById("btnBackFromCreate") as HTMLButtonElement;
+  private btnBackFromJoin = document.getElementById("btnBackFromJoin") as HTMLButtonElement;
   private btnStartMatch = document.getElementById("btnStartMatch") as HTMLButtonElement;
+  private lobbyMenuWrap = document.getElementById("lobbyMenuWrap") as HTMLElement;
+  private lobbyCreateWrap = document.getElementById("lobbyCreateWrap") as HTMLElement;
+  private lobbyJoinWrap = document.getElementById("lobbyJoinWrap") as HTMLElement;
+  private lobbyDetails = document.getElementById("lobbyDetails") as HTMLElement;
   private joinCodeInput = document.getElementById("joinCodeInput") as HTMLInputElement;
   private roomCodeEl = document.getElementById("roomCode") as HTMLElement;
   private playersList = document.getElementById("playersList") as HTMLElement;
@@ -1155,7 +1162,10 @@ class Menu {
     this.btnSingle.addEventListener("click", () => this.onSingle());
     this.btnMulti.addEventListener("click", () => this.showLobby());
     this.btnBackToMenu.addEventListener("click", () => this.showModeScreen());
-    this.btnCreate.addEventListener("click", () => this.onCreate());
+    this.btnOpenCreate.addEventListener("click", () => this.showCreateRoom());
+    this.btnOpenJoin.addEventListener("click", () => this.showJoinRoom());
+    this.btnBackFromCreate.addEventListener("click", () => this.showLobbyMenu());
+    this.btnBackFromJoin.addEventListener("click", () => this.showLobbyMenu());
     this.btnJoin.addEventListener("click", () => this.onJoin());
     this.btnStartMatch.addEventListener("click", () => this.onStartMatch());
   }
@@ -1184,7 +1194,7 @@ class Menu {
     this.multiScreen.classList.add("hide");
     document.getElementById("startScreen")?.classList.add("hide");
     document.getElementById("hud")?.classList.add("idle");
-    this.updateLobby();
+    this.showLobbyMenu();
   }
 
   private onSingle(): void {
@@ -1196,15 +1206,38 @@ class Menu {
     this.game.startGame();
   }
 
-  private updateLobby(): void {
+  private showLobbyMenu(): void {
+    void this.leaveRoom();
+    this.lobbyMenuWrap.hidden = false;
+    this.lobbyCreateWrap.hidden = true;
+    this.lobbyJoinWrap.hidden = true;
+    this.lobbyDetails.hidden = true;
     this.roomCodeEl.textContent = "—";
     this.playersList.innerHTML = "";
     this.btnStartMatch.classList.add("hide");
-    this.lobbyMsg.textContent = "按 CREATE 開房，或輸入密碼 JOIN";
+    this.btnJoin.disabled = false;
+    this.joinCodeInput.value = "";
+  }
+
+  private showCreateRoom(): void {
+    this.lobbyMenuWrap.hidden = true;
+    this.lobbyCreateWrap.hidden = false;
+    this.lobbyJoinWrap.hidden = true;
+    this.lobbyDetails.hidden = false;
+    void this.onCreate();
+  }
+
+  private showJoinRoom(): void {
+    this.lobbyMenuWrap.hidden = true;
+    this.lobbyCreateWrap.hidden = true;
+    this.lobbyJoinWrap.hidden = false;
+    this.lobbyDetails.hidden = false;
+    this.lobbyMsg.textContent = "請輸入 6 位數字房間密碼";
+    this.playersList.innerHTML = "";
+    this.joinCodeInput.focus();
   }
 
   private async onCreate(): Promise<void> {
-    this.btnCreate.disabled = true;
     this.lobbyMsg.textContent = "建立房間中...";
     try {
       this.room = await createRoom();
@@ -1214,7 +1247,6 @@ class Menu {
       this.lobbyMsg.textContent = "房間已建立，等待仙人掌加入";
     } catch (error) {
       this.lobbyMsg.textContent = error instanceof Error ? error.message : "建立房間失敗";
-      this.btnCreate.disabled = false;
     }
   }
 

@@ -34,20 +34,27 @@
         <div id="lobbyScreen" class="screen hide">
           <div class="panel lobbyPanel">
             <div class="modeTitle">MULTI PLAYER</div>
-            <div id="lobbyCreateWrap">
-              <button class="btn" id="btnCreate"> CREATE ROOM </button>
+            <div id="lobbyMenuWrap" class="lobbyView">
+              <button class="btn" id="btnOpenCreate"> CREATE ROOM </button>
+              <button class="btn" id="btnOpenJoin"> JOIN ROOM </button>
+              <button class="btn" id="btnBackToMenu"> BACK </button>
+            </div>
+            <div id="lobbyCreateWrap" class="lobbyView" hidden>
               <div class="roomCodeLabel">ROOM CODE</div>
               <div id="roomCode" class="roomCode">—</div>
               <button class="btn primary hide" id="btnStartMatch"> START GAME </button>
               <div class="hint">2-6人可開始</div>
+              <button class="btn" id="btnBackFromCreate"> BACK </button>
             </div>
-            <div id="lobbyJoinWrap">
+            <div id="lobbyJoinWrap" class="lobbyView" hidden>
               <input class="joinInput" id="joinCodeInput" type="tel" maxlength="6" inputmode="numeric" placeholder="輸入6位數字" />
               <button class="btn" id="btnJoin"> JOIN ROOM </button>
+              <button class="btn" id="btnBackFromJoin"> BACK </button>
             </div>
-            <div class="hint" id="lobbyMsg">等待玩家加入...</div>
-            <div class="playersList" id="playersList"></div>
-            <button class="btn" id="btnBackToMenu"> BACK </button>
+            <div id="lobbyDetails" hidden>
+              <div class="hint" id="lobbyMsg">等待玩家加入...</div>
+              <div class="playersList" id="playersList"></div>
+            </div>
           </div>
         </div>
 
