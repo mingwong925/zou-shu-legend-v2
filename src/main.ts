@@ -912,6 +912,7 @@ class MultiplayerGame {
   private goodShows: { x: number; y: number }[] = [];
   private fright = 0;
   private messageTimer = 0;
+  private effectTimer = 0;
   private lastRemoteFrame = 0;
 
   constructor(private room: RoomConnection, private players: RoomPlayer[]) {
@@ -987,25 +988,51 @@ class MultiplayerGame {
     void this.room.sendState(this.snapshot(winner));
   }
 
+  private showEffect(src: string, alt: string, duration = 0): void {
+    const effect = document.getElementById("multiEffect");
+    const image = document.getElementById("multiEffectImage") as HTMLImageElement | null;
+    if (!effect || !image) return;
+    window.clearTimeout(this.effectTimer);
+    image.src = src;
+    image.alt = alt;
+    effect.classList.add("show");
+    if (duration > 0) this.effectTimer = window.setTimeout(() => effect.classList.remove("show"), duration);
+  }
+
+  private showDamage(): void {
+    const game = document.getElementById("game");
+    game?.classList.remove("damageFlash");
+    void game?.offsetWidth;
+    game?.classList.add("damageFlash");
+    window.setTimeout(() => game?.classList.remove("damageFlash"), 550);
+    this.showEffect("/hp-1.png", "金幣心心減一", 1200);
+  }
+
   private snapshot(winner: "coin" | "cacti" | null) {
     return { coin: this.coin, cacti: this.cacti, dots: [...this.dots], goodShows: this.goodShows, fright: this.fright, message: null, winner };
   }
 
   private applyState(payload: GameStatePayload): void {
+    const lostLife = payload.coin.lives < this.coin.lives;
     this.targetCoin = { ...payload.coin, dir: this.toDir(payload.coin.dir) };
     this.coin.lives = payload.coin.lives;
     this.targetCacti = payload.cacti.map((cactus) => ({ ...cactus, dir: this.toDir(cactus.dir) }));
     this.goodShows = payload.goodShows;
     this.fright = payload.fright;
     this.dots = new Set(payload.dots);
-    if (payload.message) {
+    if (lostLife) {
+      this.showDamage();
+    } else if (payload.message) {
       const overlay = document.getElementById("overlay");
       if (overlay) { overlay.textContent = payload.message; overlay.classList.add("show"); }
       window.clearTimeout(this.messageTimer);
       this.messageTimer = window.setTimeout(() => overlay?.classList.remove("show"), 1200);
     }
     this.drawHud();
-    if (payload.winner) this.end(payload.winner);
+    if (payload.winner) {
+      this.showEffect(payload.winner === "coin" ? "/C_win.png" : "/O_win.png", payload.winner === "coin" ? "COIN WIN" : "仙人掌 WIN");
+      this.end(payload.winner);
+    }
   }
 
   private remoteFrame(time: number): void {

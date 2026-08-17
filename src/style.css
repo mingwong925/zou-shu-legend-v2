@@ -140,6 +140,39 @@ canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; 
   white-space: pre-line;
 }
 #overlay.show { opacity: 1; }
+#multiEffect {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  padding: 8%;
+  background: rgba(0, 0, 0, .45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s ease;
+}
+#multiEffect.show { opacity: 1; }
+#multiEffect img {
+  display: block;
+  width: min(82%, 440px);
+  max-height: 82%;
+  object-fit: contain;
+}
+#game.damageFlash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+  background: rgba(255, 20, 20, .48);
+  animation: damageFlash .52s ease-out;
+}
+@keyframes damageFlash {
+  0%, 38% { opacity: 1; }
+  18%, 58% { opacity: .12; }
+  100% { opacity: 0; }
+}
 
 /* Multi screens */
 .screen {
