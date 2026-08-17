@@ -24,6 +24,8 @@ html, body {
 }
 #hud {
   width: min(96vw, 588px);
+  position: relative;
+  overflow: hidden;
   display: flex;
   justify-content: space-between;
   font-size: 14px;
@@ -33,6 +35,28 @@ html, body {
   border-radius: 10px;
   background: rgba(0, 8, 30, 0.85);
   color: var(--gold);
+}
+#hudMarquee {
+  display: none;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.hudMarqueeTrack {
+  display: flex;
+  width: 200%;
+  animation: hudMarquee 6s linear infinite;
+}
+.hudMarqueeTrack span {
+  width: 50%;
+  flex: 0 0 50%;
+  text-align: center;
+}
+#hud.idle #hudMarquee { display: block; }
+#hud.idle > span { display: none; }
+@keyframes hudMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 #gameWrap { width: min(96vw, 588px); }
 #game {

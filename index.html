@@ -8,7 +8,13 @@
 </head>
 <body>
   <div id="app">
-    <div id="hud">
+    <div id="hud" class="idle">
+      <div id="hudMarquee" aria-label="走數傳奇">
+        <div class="hudMarqueeTrack" aria-hidden="true">
+          <span>走數傳奇</span>
+          <span>走數傳奇</span>
+        </div>
+      </div>
       <span id="hudLeft">SCORE 0</span>
       <span id="hudMid">STAGE 1</span>
       <span id="hudRight">♥♥♥</span>
@@ -16,9 +22,9 @@
     <div id="gameWrap">
       <div id="game">
         <!-- Mode select (SINGLE vs MULTI) -->
-        <div id="modeScreen" class="screen">
+        <div id="modeScreen" class="screen hide">
           <div class="panel">
-            <div class="modeTitle">走數傳奇 V2</div>
+            <div class="modeTitle">走數傳奇</div>
             <button class="btn primary" id="btnSingle"> SINGLE PLAYER </button>
             <button class="btn" id="btnMulti"> MULTI PLAYER </button>
           </div>

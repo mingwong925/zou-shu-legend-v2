@@ -67,7 +67,6 @@ class Game {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private startScreen = document.getElementById("startScreen") as HTMLElement;
-  private startButton = document.getElementById("startButton") as HTMLButtonElement;
   private mobileControls = document.getElementById("mobileControls") as HTMLElement;
   private overlay = document.getElementById("overlay") as HTMLElement;
   private hudL = document.getElementById("hudLeft") as HTMLElement;
@@ -111,7 +110,6 @@ class Game {
     this.bindInput(container);
     this.bindMobileControls();
     window.__GS_INPUT__ = { setDir: (d) => this.swipe = d };
-    this.startButton.addEventListener("click", () => this.startGame());
 
     this.loadStage();
     this.hideOverlay();
@@ -341,10 +339,11 @@ class Game {
     if (this.started) this.showOverlay("READY!");
   }
 
-  private startGame(): void {
+  public startGame(): void {
     if (this.started) return;
     this.unlockAudio();
     this.started = true;
+    document.getElementById("hud")?.classList.remove("idle");
     this.startScreen.classList.add("hide");
     this.mobileControls.classList.add("show");
     this.readyTimer = 1.2;
@@ -360,6 +359,7 @@ class Game {
     this.swipe = "none";
     this.gamepadDir = "none";
     this.loadStage();
+    document.getElementById("hud")?.classList.add("idle");
     this.startScreen.classList.remove("hide");
     this.mobileControls.classList.remove("show");
     this.hideOverlay();
@@ -1129,6 +1129,7 @@ class MultiplayerGame {
 
 // ---------- UI wiring: Menu + Lobby ----------
 class Menu {
+  private startButton = document.getElementById("startButton") as HTMLButtonElement;
   private btnSingle = document.getElementById("btnSingle") as HTMLButtonElement;
   private btnMulti = document.getElementById("btnMulti") as HTMLButtonElement;
   private modeScreen = document.getElementById("modeScreen") as HTMLElement;
@@ -1146,9 +1147,11 @@ class Menu {
   private matchStatus = document.getElementById("matchStatus") as HTMLElement;
   private matchPlayersList = document.getElementById("matchPlayersList") as HTMLElement;
   private room: RoomConnection | null = null;
+  private game: Game | null = null;
 
   init(): void {
-    this.showModeScreen();
+    this.showCover();
+    this.startButton.addEventListener("click", () => this.showModeScreen());
     this.btnSingle.addEventListener("click", () => this.onSingle());
     this.btnMulti.addEventListener("click", () => this.showLobby());
     this.btnBackToMenu.addEventListener("click", () => this.showModeScreen());
@@ -1157,12 +1160,21 @@ class Menu {
     this.btnStartMatch.addEventListener("click", () => this.onStartMatch());
   }
 
+  private showCover(): void {
+    this.modeScreen.classList.add("hide");
+    this.lobbyScreen.classList.add("hide");
+    this.multiScreen.classList.add("hide");
+    document.getElementById("startScreen")?.classList.remove("hide");
+    document.getElementById("hud")?.classList.add("idle");
+  }
+
   private showModeScreen(): void {
     void this.leaveRoom();
     this.modeScreen.classList.remove("hide");
     this.lobbyScreen.classList.add("hide");
     this.multiScreen.classList.add("hide");
-    document.getElementById("startScreen")?.classList.remove("hide");
+    document.getElementById("startScreen")?.classList.add("hide");
+    document.getElementById("hud")?.classList.add("idle");
   }
 
   private showLobby(): void {
@@ -1171,17 +1183,17 @@ class Menu {
     this.lobbyScreen.classList.remove("hide");
     this.multiScreen.classList.add("hide");
     document.getElementById("startScreen")?.classList.add("hide");
+    document.getElementById("hud")?.classList.add("idle");
     this.updateLobby();
   }
 
   private onSingle(): void {
     this.modeScreen.classList.add("hide");
     this.lobbyScreen.classList.add("hide");
-    document.getElementById("startScreen")?.classList.remove("hide");
-    // V1 game: boot and start
-    const game = new Game();
-    window.game = game;
-    // starts via user click on START button (existing behaviour)
+    document.getElementById("startScreen")?.classList.add("hide");
+    this.game ??= new Game();
+    window.game = this.game;
+    this.game.startGame();
   }
 
   private updateLobby(): void {
@@ -1243,6 +1255,7 @@ class Menu {
     this.lobbyScreen.classList.add("hide");
     this.multiScreen.classList.remove("hide");
     document.getElementById("startScreen")?.classList.add("hide");
+    document.getElementById("hud")?.classList.remove("idle");
     this.multiRoomCode.textContent = code;
     this.matchStatus.textContent = "MATCH STARTED";
     this.matchPlayersList.innerHTML = "";
