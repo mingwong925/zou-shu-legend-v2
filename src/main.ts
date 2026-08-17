@@ -343,6 +343,8 @@ class Game {
     if (this.started) return;
     this.unlockAudio();
     this.started = true;
+    document.getElementById("game")?.classList.remove("multiplayerActive", "damageFlash");
+    document.getElementById("multiEffect")?.classList.remove("show");
     document.getElementById("hud")?.classList.remove("idle");
     this.startScreen.classList.add("hide");
     this.mobileControls.classList.add("show");
@@ -920,7 +922,9 @@ class MultiplayerGame {
     this.canvas.width = W; this.canvas.height = H;
     this.ctx = this.canvas.getContext("2d")!;
     this.ctx.imageSmoothingEnabled = false;
-    document.getElementById("game")!.prepend(this.canvas);
+    const game = document.getElementById("game")!;
+    game.classList.add("multiplayerActive");
+    game.prepend(this.canvas);
     document.getElementById("multiScreen")?.classList.add("hide");
     document.getElementById("startScreen")?.classList.add("hide");
     document.getElementById("mobileControls")?.classList.add("show");
@@ -989,6 +993,7 @@ class MultiplayerGame {
   }
 
   private showEffect(src: string, alt: string, duration = 0): void {
+    if (!document.getElementById("game")?.classList.contains("multiplayerActive")) return;
     const effect = document.getElementById("multiEffect");
     const image = document.getElementById("multiEffectImage") as HTMLImageElement | null;
     if (!effect || !image) return;
@@ -1203,6 +1208,8 @@ class Menu {
     this.multiScreen.classList.add("hide");
     document.getElementById("startScreen")?.classList.remove("hide");
     document.getElementById("hud")?.classList.add("idle");
+    document.getElementById("game")?.classList.remove("multiplayerActive", "damageFlash");
+    document.getElementById("multiEffect")?.classList.remove("show");
   }
 
   private showModeScreen(): void {

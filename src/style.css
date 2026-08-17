@@ -152,14 +152,14 @@ canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; 
   pointer-events: none;
   transition: opacity .12s ease;
 }
-#multiEffect.show { opacity: 1; }
+#game.multiplayerActive #multiEffect.show { opacity: 1; }
 #multiEffect img {
   display: block;
   width: min(82%, 440px);
   max-height: 82%;
   object-fit: contain;
 }
-#game.damageFlash::after {
+#game.multiplayerActive.damageFlash::after {
   content: "";
   position: absolute;
   inset: 0;
