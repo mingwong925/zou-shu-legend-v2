@@ -870,7 +870,7 @@ class Game {
     ctx.fillStyle = flashWhite ? "#aaff00" : "#e8e8e8";
     ctx.fillRect(12, -10, 5, 8);           // handle-ish
     ctx.fillRect(17, -12, 8, 4);           // blade
-    ctx.fillStyle = flashWhite ? "#5400b8" : "#7a1f1f";
+    ctx.fillStyle = flashWhite ? "#5400b8" : "#20252b";
     ctx.fillRect(12, -12, 4, 2);           // handle end
 
     // eyes
@@ -1089,7 +1089,7 @@ class MultiplayerGame {
   }
 
   private drawCactus(x: number, y: number, color: string): void {
-    const ctx = this.ctx; ctx.fillStyle = color; ctx.fillRect(x - 8, y - 14, 16, 26); ctx.fillRect(x - 12, y - 8, 4, 14); ctx.fillRect(x + 8, y - 8, 4, 14); ctx.fillRect(x - 2, y - 19, 4, 5); ctx.fillStyle = "#102010"; ctx.fillRect(x - 5, y - 9, 3, 3); ctx.fillRect(x + 2, y - 9, 3, 3); ctx.fillStyle = "#7a1f1f"; ctx.fillRect(x + 12, y - 10, 5, 8); ctx.fillRect(x + 17, y - 12, 8, 4);
+    const ctx = this.ctx; ctx.fillStyle = color; ctx.fillRect(x - 8, y - 14, 16, 26); ctx.fillRect(x - 12, y - 8, 4, 14); ctx.fillRect(x + 8, y - 8, 4, 14); ctx.fillRect(x - 2, y - 19, 4, 5); ctx.fillStyle = "#102010"; ctx.fillRect(x - 5, y - 9, 3, 3); ctx.fillRect(x + 2, y - 9, 3, 3); ctx.fillStyle = "#20252b"; ctx.fillRect(x + 12, y - 10, 5, 8); ctx.fillStyle = "#c9d1d9"; ctx.fillRect(x + 17, y - 12, 8, 4);
   }
 
   private drawGoodShowLogo(x: number, y: number): void {
