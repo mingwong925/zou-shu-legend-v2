@@ -159,18 +159,18 @@ canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; 
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: min(92vw, 460px);
-  max-height: calc(100% - 20px);
-  overflow-y: auto;
-  overflow-x: hidden;
+  gap: 9px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
   align-items: center;
-  padding: 14px;
-  background: rgba(0, 8, 30, 0.96);
-  border: 3px solid var(--blue);
-  box-shadow: 0 10px 0 rgba(0, 0, 0, 0.45);
+  justify-content: center;
+  padding: clamp(6px, 2vw, 12px);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
-.lobbyPanel { gap: 10px; }
+.lobbyPanel { gap: 7px; }
 .lobbyView {
   display: flex;
   flex-direction: column;
@@ -266,29 +266,34 @@ canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; 
 }
 .playersList {
   width: min(86%, 320px);
-  min-height: 40px;
-  max-height: 120px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+  min-height: 0;
+  overflow: visible;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
-  align-items: stretch;
   flex-shrink: 0;
 }
 .playerRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 8px;
+  min-width: 0;
+  padding: 5px 6px;
   border: 2px solid #111;
   background: #0a1020;
   color: #e8ecff;
   font-weight: 900;
   letter-spacing: 1px;
-  font-size: 13px;
+  font-size: 11px;
+}
+.playerRow > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .playerRow .tag {
-  font-size: 11px;
+  margin-left: 4px;
+  font-size: 10px;
   color: #b8c6ff;
 }
 
