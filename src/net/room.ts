@@ -19,6 +19,7 @@ export class RoomConnection {
   private socket: Socket;
   private playersListener: ((players: RoomPlayer[]) => void) | null = null;
   private matchStartListener: ((payload: MatchStartPayload) => void) | null = null;
+  private pendingMatchStart: MatchStartPayload | null = null;
   private inputListener: ((payload: InputPayload) => void) | null = null;
   private stateListener: ((payload: GameStatePayload) => void) | null = null;
   private players: RoomPlayer[] = [];
@@ -26,12 +27,22 @@ export class RoomConnection {
   constructor(socket: Socket, code: string, role: RoomRole, player: RoomPlayer) {
     this.socket = socket; this.code = code; this.role = role; this.playerIndex = player.playerIndex; this.clientId = player.id; this.players = [player];
     socket.on("room-players", (players: RoomPlayer[]) => { this.players = players; this.playersListener?.(players); });
-    socket.on("match-start", (payload: MatchStartPayload) => this.matchStartListener?.(payload));
+    socket.on("match-start", (payload: MatchStartPayload) => {
+      if (this.matchStartListener) this.matchStartListener(payload);
+      else this.pendingMatchStart = payload;
+    });
     socket.on("game-state", (payload: GameStatePayload) => this.stateListener?.(payload));
     socket.on("game-input", (payload: InputPayload) => this.inputListener?.(payload));
   }
   onPlayers(listener: (players: RoomPlayer[]) => void): void { this.playersListener = listener; }
-  onMatchStart(listener: (payload: MatchStartPayload) => void): void { this.matchStartListener = listener; }
+  onMatchStart(listener: (payload: MatchStartPayload) => void): void {
+    this.matchStartListener = listener;
+    if (this.pendingMatchStart) {
+      const payload = this.pendingMatchStart;
+      this.pendingMatchStart = null;
+      listener(payload);
+    }
+  }
   onInput(listener: (payload: InputPayload) => void): void { this.inputListener = listener; }
   onState(listener: (payload: GameStatePayload) => void): void { this.stateListener = listener; }
   getPlayers(): RoomPlayer[] { return this.players; }
