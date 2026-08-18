@@ -1150,9 +1150,9 @@ class MultiplayerGame {
     if (isLocalPlayer) {
       ctx.fillStyle = "#39ff14";
       ctx.beginPath();
-      ctx.moveTo(0, -31);
-      ctx.lineTo(-7, -21);
-      ctx.lineTo(7, -21);
+      ctx.moveTo(-7, -31);
+      ctx.lineTo(7, -31);
+      ctx.lineTo(0, -21);
       ctx.closePath();
       ctx.fill();
       ctx.strokeStyle = "#071505";
