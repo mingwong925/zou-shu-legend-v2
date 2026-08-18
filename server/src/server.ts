@@ -53,7 +53,7 @@ function tick(room: Room): void { if (room.winner) return; const now = Date.now(
   if (room.dots.size === 0) room.winner = "coin";
   io.to(room.code).emit("game-state", snapshot(room));
 }
-function roster(room: Room) { return [...room.players.values()].map(({ id, role, playerIndex, color }) => ({ id, role, playerIndex, color, label: role === "host" ? "CASH (HOST)" : "戈壁兄" })); }
+function roster(room: Room) { return [...room.players.values()].map(({ id, role, playerIndex, color }) => ({ id, role, playerIndex, color, label: role === "host" ? "CASH (HOST)" : "戈壁兄弟" })); }
 
 io.on("connection", (socket) => {
   socket.on("room:create", ({ code }, reply) => { if (rooms.has(code)) return reply({ ok: false, error: "房間已存在" }); const room = newRoom(code); room.players.set(socket.id, { id: socket.id, role: "host", playerIndex: 1, color: COLORS[0], x: 0, y: 0, dir: "none", want: "none", jailedUntil: 0 }); rooms.set(code, room); socket.join(code); reply({ ok: true, code, player: roster(room)[0] }); io.to(code).emit("room-players", roster(room)); });
