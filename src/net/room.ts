@@ -43,11 +43,19 @@ export class RoomConnection {
 }
 
 async function connectRoom(code: string, role: RoomRole): Promise<RoomConnection> {
-  const socket = io(SERVER_URL, { transports: ["websocket", "polling"] });
+  const socket = io(SERVER_URL, {
+    transports: ["websocket", "polling"],
+    reconnection: true,
+    reconnectionAttempts: 12,
+    reconnectionDelay: 1500,
+    timeout: 10000,
+  });
   const event = role === "host" ? "room:create" : "room:join";
   const result = await new Promise<{ ok: boolean; error?: string; player: RoomPlayer }>((resolve, reject) => {
-    const timer = window.setTimeout(() => reject(new Error("遊戲伺服器連線逾時，請確認 server 正在運行。")), 6000);
-    socket.on("connect_error", (error) => { window.clearTimeout(timer); reject(error); });
+    const timer = window.setTimeout(() => {
+      socket.disconnect();
+      reject(new Error("遊戲伺服器仍在喚醒中，請稍後再試。"));
+    }, 65_000);
     socket.on("connect", () => socket.emit(event, { code }, (reply: { ok: boolean; error?: string; player: RoomPlayer }) => { window.clearTimeout(timer); reply.ok ? resolve(reply) : reject(new Error(reply.error)); }));
   });
   return new RoomConnection(socket, code, role, result.player);
