@@ -153,6 +153,7 @@ canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; 
   transition: opacity .12s ease;
 }
 #game.multiplayerActive #multiEffect.show { opacity: 1; }
+#game.multiplayerActive #multiEffect.result { pointer-events: auto; }
 #multiEffect img {
   display: block;
   width: min(82%, 440px);
