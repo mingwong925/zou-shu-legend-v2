@@ -164,9 +164,18 @@ canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; 
   animation: winImagePop 1.35s ease-in-out infinite;
   transform-origin: center;
 }
+#multiEffect.show:not(.result) img {
+  animation: damageShake .12s linear 7;
+  transform-origin: center;
+}
 @keyframes winImagePop {
   0%, 100% { transform: scale(.88); }
   50% { transform: scale(1.04); }
+}
+@keyframes damageShake {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  25% { transform: translateX(-7px) rotate(-2deg); }
+  75% { transform: translateX(7px) rotate(2deg); }
 }
 #multiEffectMessage {
   display: none;
