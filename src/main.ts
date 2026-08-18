@@ -916,6 +916,7 @@ class MultiplayerGame {
   private messageTimer = 0;
   private effectTimer = 0;
   private lastRemoteFrame = 0;
+  private audioCtx: AudioContext | null = null;
 
   constructor(private room: RoomConnection, private players: RoomPlayer[]) {
     this.canvas = document.createElement("canvas");
@@ -935,6 +936,43 @@ class MultiplayerGame {
     this.room.onClosed(() => this.showConnectionFailure());
     document.getElementById("multiRestart")?.addEventListener("click", () => window.location.reload());
     this.start();
+  }
+
+  private unlockAudio(): void {
+    if (!this.audioCtx) {
+      const AudioCtor = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtor) return;
+      this.audioCtx = new AudioCtor();
+    }
+    if (this.audioCtx.state === "suspended") void this.audioCtx.resume();
+  }
+
+  private effectBeep(freq: number, duration: number, type: OscillatorType, gain: number, delay = 0): void {
+    this.unlockAudio();
+    const audio = this.audioCtx;
+    if (!audio) return;
+    const start = audio.currentTime + delay;
+    const oscillator = audio.createOscillator();
+    const volume = audio.createGain();
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(freq, start);
+    volume.gain.setValueAtTime(0.0001, start);
+    volume.gain.exponentialRampToValueAtTime(gain, start + 0.01);
+    volume.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+    oscillator.connect(volume).connect(audio.destination);
+    oscillator.start(start);
+    oscillator.stop(start + duration + 0.02);
+  }
+
+  private playMultiplayerSound(name: "damage" | "win"): void {
+    if (name === "damage") {
+      this.effectBeep(150, 0.16, "sawtooth", 0.08);
+      this.effectBeep(90, 0.24, "sawtooth", 0.07, 0.12);
+      return;
+    }
+    this.effectBeep(520, 0.08, "triangle", 0.06);
+    this.effectBeep(700, 0.08, "triangle", 0.06, 0.08);
+    this.effectBeep(1040, 0.16, "triangle", 0.07, 0.16);
   }
 
   private removeDepartedCacti(players: RoomPlayer[]): void {
@@ -1036,6 +1074,7 @@ class MultiplayerGame {
     void game?.offsetWidth;
     game?.classList.add("damageFlash");
     window.setTimeout(() => game?.classList.remove("damageFlash"), 550);
+    this.playMultiplayerSound("damage");
     this.showEffect("/hp-1.png", "CASH 心心減一", 1200);
   }
 
@@ -1065,6 +1104,7 @@ class MultiplayerGame {
     }
     this.drawHud();
     if (payload.winner) {
+      this.playMultiplayerSound("win");
       this.showEffect(payload.winner === "coin" ? "/C_win.png" : "/O_win.png", payload.winner === "coin" ? "COIN WIN" : "戈壁兄弟 WIN");
       document.getElementById("multiEffect")?.classList.add("result");
       this.end(payload.winner);
