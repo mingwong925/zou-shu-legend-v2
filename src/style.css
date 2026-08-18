@@ -160,6 +160,14 @@ canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; 
   max-height: 82%;
   object-fit: contain;
 }
+#multiEffect.result img {
+  animation: winImagePop 1.35s ease-in-out infinite;
+  transform-origin: center;
+}
+@keyframes winImagePop {
+  0%, 100% { transform: scale(.88); }
+  50% { transform: scale(1.04); }
+}
 #multiEffectMessage {
   display: none;
   color: #ff4040;
