@@ -1048,7 +1048,7 @@ class MultiplayerGame {
     }
     this.drawHud();
     if (payload.winner) {
-      this.showEffect(payload.winner === "coin" ? "/C_win.png" : "/O_win.png", payload.winner === "coin" ? "COIN WIN" : "仙人掌 WIN");
+      this.showEffect(payload.winner === "coin" ? "/C_win.png" : "/O_win.png", payload.winner === "coin" ? "COIN WIN" : "戈壁兄弟 WIN");
       document.getElementById("multiEffect")?.classList.add("result");
       this.end(payload.winner);
     }
@@ -1292,7 +1292,7 @@ class Menu {
       this.roomCodeEl.textContent = this.room.code;
       this.room.onPlayers((players) => this.renderPlayers(players));
       this.room.onMatchStart((payload) => this.showMatch(payload.code, payload.players));
-      this.lobbyMsg.textContent = "房間已建立，等待仙人掌加入";
+      this.lobbyMsg.textContent = "房間已建立，等待戈壁兄弟加入";
     } catch (error) {
       this.lobbyMsg.textContent = error instanceof Error ? error.message : "建立房間失敗";
     }
@@ -1355,7 +1355,7 @@ class Menu {
       const row = document.createElement("div");
       row.className = `playerRow${isLocalCactus ? " you" : ""}`;
       if (isLocalCactus) row.style.backgroundColor = player.color;
-      row.innerHTML = `<span style="color:${isLocalCactus ? "#000000" : player.color}">${isLocalCactus ? "仙人掌 YOU" : player.label}</span><span class="tag">P${player.playerIndex}</span>`;
+      row.innerHTML = `<span style="color:${isLocalCactus ? "#000000" : player.color}">${isLocalCactus ? "戈壁兄弟 YOU" : player.label}</span><span class="tag">P${player.playerIndex}</span>`;
       this.playersList.appendChild(row);
     }
     this.btnStartMatch.classList.toggle("hide", !this.room || this.room.role !== "host" || players.length < 2);
