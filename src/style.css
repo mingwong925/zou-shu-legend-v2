@@ -160,6 +160,15 @@ canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; 
   max-height: 82%;
   object-fit: contain;
 }
+#multiEffectMessage {
+  display: none;
+  color: #ff4040;
+  font: 900 clamp(22px, 5vw, 38px)/1.1 ui-monospace, Menlo, Monaco, monospace;
+  letter-spacing: 1px;
+  text-align: center;
+}
+#multiEffect.failure #multiEffectMessage { display: block; }
+#multiEffect.failure img { display: none; }
 #multiRestart { display: none; position: absolute; bottom: 8%; min-width: min(70%, 260px); }
 #multiEffect.result #multiRestart { display: block; }
 #game.multiplayerActive.damageFlash::after {

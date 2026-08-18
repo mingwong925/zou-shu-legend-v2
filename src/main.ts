@@ -932,6 +932,7 @@ class MultiplayerGame {
     this.bindInput();
     this.room.onPlayers((players) => this.removeDepartedCacti(players));
     this.room.onState((payload) => this.applyState(payload));
+    this.room.onClosed(() => this.showConnectionFailure());
     document.getElementById("multiRestart")?.addEventListener("click", () => window.location.reload());
     this.start();
   }
@@ -1011,6 +1012,22 @@ class MultiplayerGame {
     image.alt = alt;
     effect.classList.add("show");
     if (duration > 0) this.effectTimer = window.setTimeout(() => effect.classList.remove("show"), duration);
+  }
+
+  private showConnectionFailure(): void {
+    this.running = false;
+    window.clearInterval(this.loopId);
+    window.clearInterval(this.inputLoopId);
+    window.cancelAnimationFrame(this.renderLoopId);
+    const effect = document.getElementById("multiEffect");
+    const image = document.getElementById("multiEffectImage") as HTMLImageElement | null;
+    const message = document.getElementById("multiEffectMessage");
+    if (!effect || !message) return;
+    image?.removeAttribute("src");
+    message.textContent = "Failed to connect";
+    effect.classList.remove("show", "result");
+    void effect.offsetWidth;
+    effect.classList.add("show", "result", "failure");
   }
 
   private showDamage(): void {

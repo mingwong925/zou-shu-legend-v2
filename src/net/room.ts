@@ -19,6 +19,7 @@ export class RoomConnection {
   private socket: Socket;
   private playersListener: ((players: RoomPlayer[]) => void) | null = null;
   private matchStartListener: ((payload: MatchStartPayload) => void) | null = null;
+  private closedListener: (() => void) | null = null;
   private pendingMatchStart: MatchStartPayload | null = null;
   private inputListener: ((payload: InputPayload) => void) | null = null;
   private stateListener: ((payload: GameStatePayload) => void) | null = null;
@@ -31,6 +32,7 @@ export class RoomConnection {
       if (this.matchStartListener) this.matchStartListener(payload);
       else this.pendingMatchStart = payload;
     });
+    socket.on("room-closed", () => this.closedListener?.());
     socket.on("game-state", (payload: GameStatePayload) => this.stateListener?.(payload));
     socket.on("game-input", (payload: InputPayload) => this.inputListener?.(payload));
   }
@@ -43,6 +45,7 @@ export class RoomConnection {
       listener(payload);
     }
   }
+  onClosed(listener: () => void): void { this.closedListener = listener; }
   onInput(listener: (payload: InputPayload) => void): void { this.inputListener = listener; }
   onState(listener: (payload: GameStatePayload) => void): void { this.stateListener = listener; }
   getPlayers(): RoomPlayer[] { return this.players; }
