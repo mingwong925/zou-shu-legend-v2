@@ -687,7 +687,7 @@ class Game {
           ctx.fillRect(px + TILE - 5, py + 3, 2, TILE - 6);
         } else if (t === "=") {
           const px = x * TILE, py = y * TILE;
-          ctx.fillStyle = "#ffb8d0";
+          ctx.fillStyle = "#ff4040";
           ctx.fillRect(px + 2, py + TILE / 2 - 2, TILE - 4, 4);
         } else if (t === "-") {
           const px = x * TILE, py = y * TILE;
@@ -1139,6 +1139,7 @@ class MultiplayerGame {
     ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
     for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
       if (MAP[y][x] === "#") { ctx.fillStyle = "#001a66"; ctx.fillRect(x * TILE, y * TILE, TILE, TILE); ctx.strokeStyle = "#1f4bff"; ctx.strokeRect(x * TILE + 2, y * TILE + 2, TILE - 4, TILE - 4); }
+      if (MAP[y][x] === "=") { ctx.fillStyle = "#ff4040"; ctx.fillRect(x * TILE + 2, y * TILE + TILE / 2 - 2, TILE - 4, 4); }
     }
     ctx.fillStyle = "#ffe58f";
     for (const dot of this.dots) { const [x, y] = dot.split(",").map(Number); ctx.fillRect(x * TILE + 13, y * TILE + 13, 5, 5); }
