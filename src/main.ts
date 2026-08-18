@@ -932,6 +932,7 @@ class MultiplayerGame {
     this.bindInput();
     this.room.onPlayers((players) => this.removeDepartedCacti(players));
     this.room.onState((payload) => this.applyState(payload));
+    document.getElementById("multiRestart")?.addEventListener("click", () => window.location.reload());
     this.start();
   }
 
@@ -1018,7 +1019,7 @@ class MultiplayerGame {
     void game?.offsetWidth;
     game?.classList.add("damageFlash");
     window.setTimeout(() => game?.classList.remove("damageFlash"), 550);
-    this.showEffect("/hp-1.png", "金幣心心減一", 1200);
+    this.showEffect("/hp-1.png", "CASH 心心減一", 1200);
   }
 
   private snapshot(winner: "coin" | "cacti" | null) {
@@ -1048,6 +1049,7 @@ class MultiplayerGame {
     this.drawHud();
     if (payload.winner) {
       this.showEffect(payload.winner === "coin" ? "/C_win.png" : "/O_win.png", payload.winner === "coin" ? "COIN WIN" : "仙人掌 WIN");
+      document.getElementById("multiEffect")?.classList.add("result");
       this.end(payload.winner);
     }
   }

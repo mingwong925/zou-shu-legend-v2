@@ -159,6 +159,8 @@ canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; 
   max-height: 82%;
   object-fit: contain;
 }
+#multiRestart { display: none; position: absolute; bottom: 8%; min-width: min(70%, 260px); }
+#multiEffect.result #multiRestart { display: block; }
 #game.multiplayerActive.damageFlash::after {
   content: "";
   position: absolute;
