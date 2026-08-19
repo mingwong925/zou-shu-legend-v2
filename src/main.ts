@@ -657,7 +657,7 @@ class Game {
             this.over = true;
             this.mobileControls.classList.remove("show");
             document.getElementById("multiEffect")?.classList.remove("show", "result", "singleResult", "failure", "cactusResult");
-            this.showSingleEffect("/O_win.png", "戈壁兄弟 WIN", true, 3000);
+            this.showSingleEffect("/O_win.png", "戈壁兄弟 WIN", true, 2000);
             this.showOverlay(`GAME OVER\nSCORE ${this.score}\nTap / Enter`);
           } else {
             this.loadStagePositionsOnly();
