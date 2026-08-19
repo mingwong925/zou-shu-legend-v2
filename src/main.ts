@@ -110,6 +110,7 @@ class Game {
     this.bindInput(container);
     this.bindMobileControls();
     window.__GS_INPUT__ = { setDir: (d) => this.swipe = d };
+    document.getElementById("multiRestart")?.addEventListener("click", () => window.location.reload());
 
     this.loadStage();
     this.hideOverlay();
@@ -344,6 +345,7 @@ class Game {
     this.unlockAudio();
     this.started = true;
     document.getElementById("game")?.classList.remove("multiplayerActive", "damageFlash");
+    document.getElementById("game")?.classList.add("singleActive");
     document.getElementById("multiEffect")?.classList.remove("show");
     document.getElementById("hud")?.classList.remove("idle");
     this.startScreen.classList.add("hide");
@@ -361,6 +363,8 @@ class Game {
     this.swipe = "none";
     this.gamepadDir = "none";
     this.loadStage();
+    document.getElementById("game")?.classList.remove("singleActive", "damageFlash");
+    document.getElementById("multiEffect")?.classList.remove("show", "result", "failure");
     document.getElementById("hud")?.classList.add("idle");
     this.startScreen.classList.remove("hide");
     this.mobileControls.classList.remove("show");
@@ -372,6 +376,27 @@ class Game {
     this.overlay.classList.add("show");
   }
   private hideOverlay(): void { this.overlay.classList.remove("show"); }
+
+  private showSingleEffect(src: string, alt: string, result: boolean, duration = 0): void {
+    const effect = document.getElementById("multiEffect");
+    const image = document.getElementById("multiEffectImage") as HTMLImageElement | null;
+    if (!effect || !image) return;
+    image.src = src;
+    image.alt = alt;
+    effect.classList.toggle("result", result);
+    effect.classList.remove("failure");
+    effect.classList.add("show");
+    if (duration > 0) window.setTimeout(() => effect.classList.remove("show"), duration);
+  }
+
+  private showSingleDamage(): void {
+    const game = document.getElementById("game");
+    game?.classList.remove("damageFlash");
+    void game?.offsetWidth;
+    game?.classList.add("damageFlash");
+    window.setTimeout(() => game?.classList.remove("damageFlash"), 550);
+    this.showSingleEffect("/hp-1.png", "CASH HP -1", false, 1200);
+  }
 
   /* ---------- game loop ---------- */
   private loop(now: number): void {
@@ -625,8 +650,10 @@ class Game {
           if (this.lives <= 0) {
             this.over = true;
             this.mobileControls.classList.remove("show");
+            this.showSingleEffect("/O_win.png", "戈壁兄弟 WIN", true);
             this.showOverlay(`GAME OVER\nSCORE ${this.score}\nTap / Enter`);
           } else {
+            this.showSingleDamage();
             this.loadStagePositionsOnly();
             this.showOverlay("OUCH!");
             this.readyTimer = 0.9;
