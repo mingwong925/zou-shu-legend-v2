@@ -385,6 +385,7 @@ class Game {
     image.alt = alt;
     effect.classList.toggle("result", result);
     effect.classList.toggle("singleResult", result);
+    effect.classList.remove("cactusResult");
     effect.classList.remove("failure");
     effect.classList.add("show");
     if (duration > 0) window.setTimeout(() => effect.classList.remove("show"), duration);
@@ -1134,6 +1135,7 @@ class MultiplayerGame {
     if (payload.winner) {
       this.playMultiplayerSound("win");
       this.showEffect(payload.winner === "coin" ? "/C_win.png" : "/O_win.png", payload.winner === "coin" ? "COIN WIN" : "戈壁兄弟 WIN");
+      if (payload.winner === "cacti") document.getElementById("multiEffect")?.classList.add("cactusResult");
       document.getElementById("multiEffect")?.classList.add("result");
       this.end(payload.winner);
     }
