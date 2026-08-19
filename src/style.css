@@ -156,6 +156,7 @@ canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; 
 #game.singleActive #multiEffect.show { opacity: 1; }
 #game.multiplayerActive #multiEffect.result { pointer-events: auto; }
 #game.singleActive #multiEffect.result { pointer-events: auto; }
+#game.singleActive #multiEffect.singleResult #multiRestart { display: none; }
 #multiEffect img {
   display: block;
   width: min(82%, 440px);

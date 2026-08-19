@@ -384,6 +384,7 @@ class Game {
     image.src = src;
     image.alt = alt;
     effect.classList.toggle("result", result);
+    effect.classList.toggle("singleResult", result);
     effect.classList.remove("failure");
     effect.classList.add("show");
     if (duration > 0) window.setTimeout(() => effect.classList.remove("show"), duration);
@@ -397,7 +398,7 @@ class Game {
     window.setTimeout(() => game?.classList.remove("damageFlash"), 550);
     this.showSingleEffect("/hp-1.png", "CASH HP -1", false, 450);
     this.showOverlay("CASH ♥ -1");
-    this.readyTimer = 0.9;
+    this.readyTimer = 2;
   }
 
   /* ---------- game loop ---------- */
