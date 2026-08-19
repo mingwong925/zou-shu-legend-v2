@@ -396,6 +396,8 @@ class Game {
     game?.classList.add("damageFlash");
     window.setTimeout(() => game?.classList.remove("damageFlash"), 550);
     this.showSingleEffect("/hp-1.png", "CASH HP -1", false, 1200);
+    this.showOverlay("CASH ♥ -1");
+    this.readyTimer = 0.9;
   }
 
   /* ---------- game loop ---------- */
@@ -650,13 +652,11 @@ class Game {
           if (this.lives <= 0) {
             this.over = true;
             this.mobileControls.classList.remove("show");
-            this.showSingleEffect("/O_win.png", "戈壁兄弟 WIN", true);
+            this.showSingleEffect("/O_win.png", "戈壁兄弟 WIN", true, 3000);
             this.showOverlay(`GAME OVER\nSCORE ${this.score}\nTap / Enter`);
           } else {
-            this.showSingleDamage();
             this.loadStagePositionsOnly();
-            this.showOverlay("OUCH!");
-            this.readyTimer = 0.9;
+            this.showSingleDamage();
           }
           return;
         }
