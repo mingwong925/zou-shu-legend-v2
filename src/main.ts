@@ -395,7 +395,7 @@ class Game {
     void game?.offsetWidth;
     game?.classList.add("damageFlash");
     window.setTimeout(() => game?.classList.remove("damageFlash"), 550);
-    this.showSingleEffect("/hp-1.png", "CASH HP -1", false, 1200);
+    this.showSingleEffect("/hp-1.png", "CASH HP -1", false, 450);
     this.showOverlay("CASH ♥ -1");
     this.readyTimer = 0.9;
   }
