@@ -91,6 +91,7 @@ class Game {
   private swipe: Dir = "none";
   private gamepadDir: Dir = "none";
   private gamepadActionHeld = false;
+  private singleEffectTimer = 0;
 
   private ticks = 0;
   private updateTicks = 0;
@@ -381,6 +382,7 @@ class Game {
     const effect = document.getElementById("multiEffect");
     const image = document.getElementById("multiEffectImage") as HTMLImageElement | null;
     if (!effect || !image) return;
+    window.clearTimeout(this.singleEffectTimer);
     image.src = src;
     image.alt = alt;
     effect.classList.toggle("result", result);
@@ -388,7 +390,7 @@ class Game {
     effect.classList.remove("cactusResult");
     effect.classList.remove("failure");
     effect.classList.add("show");
-    if (duration > 0) window.setTimeout(() => effect.classList.remove("show"), duration);
+    if (duration > 0) this.singleEffectTimer = window.setTimeout(() => effect.classList.remove("show"), duration);
   }
 
   private showSingleDamage(): void {
@@ -654,6 +656,7 @@ class Game {
           if (this.lives <= 0) {
             this.over = true;
             this.mobileControls.classList.remove("show");
+            document.getElementById("multiEffect")?.classList.remove("show", "result", "singleResult", "failure", "cactusResult");
             this.showSingleEffect("/O_win.png", "戈壁兄弟 WIN", true, 3000);
             this.showOverlay(`GAME OVER\nSCORE ${this.score}\nTap / Enter`);
           } else {
